@@ -2,18 +2,19 @@
 #include "_config.h"
 
 #define UNPRESSED !PRESSED
+#define MOTOR_OFF !MOTOR_ON
 
 // Function to check if a slot is loaded
-bool isSlotLoaded(int slotNumber) {
+bool isSlotLoaded(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
   // Read the hub switch pin state
-  int state = digitalRead(slots[slotNumber - 1].hubSwitchPin);
+  bool state = digitalRead(slots[slotNumber - 1].hubSwitchPin);
   return (state == PRESSED);
 }
 
 // Check which slot is currently loaded, 0 if none
-int loadedSlot() {
-  for (int i = 1; i <= MAX_SLOTS; i++) {
+uint8_t loadedSlot() {
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
     if (isSlotLoaded(i)) {
       return i;  // Return the number of the loaded slot
     }
@@ -21,40 +22,41 @@ int loadedSlot() {
   return 0;  // Return 0 if no slots are loaded
 }
 
+
 // Function to move a motor associated with a given slot
-void moveMotor(int slotNumber, float moveDistance, float speed) {
+void moveMotor(uint8_t slotNumber, float moveDistance, float speed) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
   Slot slot = slots[slotNumber - 1];
 
   // Calculate the number of steps and step delay
-  int steps = abs(moveDistance * slot.stepsPerMM);      // Convert distance to steps
-  int stepDelay = 1000000 / (speed * slot.stepsPerMM);  // Calculate delay in microseconds
+  unsigned long steps = abs(moveDistance * slot.stepsPerMM);      // Convert distance to steps
+  unsigned int stepDelay = 1000000 / (speed * slot.stepsPerMM);  // Calculate delay in microseconds
 
   // Determine direction
   bool dir = (moveDistance >= 0) ? slot.feedDir : !slot.feedDir;
   digitalWrite(slot.dirPin, dir);
 
-  // Enable motor if necessary
+  // Enable motor
   digitalWrite(slot.enablePin, MOTOR_ON);
 
   // Perform steps with delay
-  for (int i = 0; i < steps; i++) {
+  for (unsigned long i = 0; i < steps; i++) {
     digitalWrite(slot.stepPin, HIGH);
     delayMicroseconds(stepDelay);
     digitalWrite(slot.stepPin, LOW);
     delayMicroseconds(stepDelay);
   }
 
-  // Disable motor if necessary
-  digitalWrite(slot.enablePin, !MOTOR_ON);
+  // Disable motor
+  // digitalWrite(slot.enablePin, MOTOR_OFF);
 }
 
 
-void unloadSlot(int slotNumber) {
+void unloadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-  int currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
+  uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
   if (currentLoadedSlot == 0) {
     Serial.println("No filament currently loaded!");
     return;
@@ -69,15 +71,18 @@ void unloadSlot(int slotNumber) {
   while (isSlotLoaded(slotNumber)) {
     moveMotor(slotNumber, -1, LOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
+
+  // Turn motor off
+  digitalWrite(slots[slotNumber-1].enablePin, MOTOR_OFF);
+
   Serial.println("Unloaded.");
 }
 
 
-void loadSlot(int slotNumber) {
+void loadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-
-  int currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
+  uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
   if (currentLoadedSlot == slotNumber) {
     Serial.println("Slot " + String(currentLoadedSlot) + " is already loaded!");
     return;
@@ -96,18 +101,18 @@ void loadSlot(int slotNumber) {
 }
 
 
-void filamentSwap(int slotNumber) {
+void filamentSwap(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-  int currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
+  uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
 
   // Unload the current loaded slot if one is loaded
-  if (currentLoadedSlot == -1) {
+  if (currentLoadedSlot == 0) {
     Serial.println("No filament currently loaded!");
   }
   if (currentLoadedSlot == slotNumber) {
     Serial.println("Slot " + String(currentLoadedSlot) + " is already loaded!");
-  } else if (currentLoadedSlot != -1 && currentLoadedSlot != slotNumber) {
+  } else if (currentLoadedSlot != 0 && currentLoadedSlot != slotNumber) {
     // Unload current loaded slot
     unloadSlot(currentLoadedSlot);
   }
@@ -125,19 +130,19 @@ void filamentSwap(int slotNumber) {
 void feed() {
 
   while (true) {
-    int currentLoadedSlot = loadedSlot();
+    uint8_t currentLoadedSlot = loadedSlot();
 
     // feed until it finds resistance in the buffed (unclick switch)
     Serial.print("[Buffer] Feeding");
     while (digitalRead(BUFFER_PIN) == PRESSED) {
-      moveMotor(currentLoadedSlot, 1, LOAD_SPEED);  // Move forward by 1mm at speed 10mm/s
+      moveMotor(currentLoadedSlot, 1, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
       Serial.print(".");
     }
     Serial.println("");
 
-    // compress the spring by 10mm
+    // compress the spring by fixed amount
     Serial.println("[Buffer] Preloading...");
-    moveMotor(currentLoadedSlot, 10, LOAD_SPEED);
+    moveMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
 
     Serial.println("[Buffer] Idle");
     while (digitalRead(BUFFER_PIN) == UNPRESSED); // wait for buffer to be empty
@@ -152,7 +157,7 @@ void setup() {
 
   // Configure pins for each slot
   Serial.println("Initializing Slots... " + String(MAX_SLOTS));
-  for (int i = 0; i < MAX_SLOTS; i++) {
+  for (uint8_t i = 0; i < MAX_SLOTS; i++) {
     pinMode(slots[i].enablePin, OUTPUT);
     pinMode(slots[i].dirPin, OUTPUT);
     pinMode(slots[i].stepPin, OUTPUT);
@@ -169,6 +174,7 @@ void setup() {
   pinMode(BUFFER_PIN, INPUT_PULLUP);
   Serial.println("[Buffer] initialized!");
 }
+
 void loop() {
   if (Serial.available() > 0) {
 
@@ -251,7 +257,7 @@ void loop() {
     // FEED
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("FEED")) {
-      Serial.println("Entering feed mode (You need to reset to stop)");
+      Serial.println(("Entering feed mode (You need to reset to stop)"));
       feed();
     }
 
