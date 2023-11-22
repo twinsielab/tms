@@ -57,25 +57,25 @@ void unloadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
   uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
-  if (currentLoadedSlot == 0) {
-    Serial.println("No filament currently loaded!");
-    return;
-  }
   if (currentLoadedSlot != slotNumber) {
-    Serial.println("Slot " + String(slotNumber) + " is already unloaded!");
+    Serial.println("[SLOT-" + String(slotNumber) + "] Already unloaded!");
     return;
   }
 
-  Serial.println("Unloading slot " + String(slotNumber) + "...");
+  Serial.println("[SLOT-" + String(slotNumber) + "] Unloading...");
+
   // Unload by moving backward until not loaded
   while (isSlotLoaded(slotNumber)) {
-    moveMotor(slotNumber, -1, LOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveMotor(slotNumber, -1, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
+
+  // retract this amount past the switch
+  moveMotor(slotNumber, -HUB_OFFSET_BEFORE, UNLOAD_SPEED);
 
   // Turn motor off
   digitalWrite(slots[slotNumber-1].enablePin, MOTOR_OFF);
 
-  Serial.println("Unloaded.");
+  Serial.println("[SLOT-" + String(slotNumber) + "] Unloaded!");
 }
 
 
@@ -83,21 +83,26 @@ void loadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
   uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
-  if (currentLoadedSlot == slotNumber) {
-    Serial.println("Slot " + String(currentLoadedSlot) + " is already loaded!");
-    return;
-  }
-  if (currentLoadedSlot != slotNumber) {
-    Serial.println("Can't load! Slot " + String(currentLoadedSlot) + " is currently loaded!");
-    return;
-  }
+  if (currentLoadedSlot == 0) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] Loading...");
 
-  Serial.println("Loading slot " + String(currentLoadedSlot) + "...");
-  // Load by moving backward until not loaded
-  while (isSlotLoaded(currentLoadedSlot)) {
-    moveMotor(currentLoadedSlot, 1, LOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    // Load by moving forward until loaded
+    while (!isSlotLoaded(slotNumber)) {
+      moveMotor(slotNumber, 1, LOAD_SPEED);  // Move backward by 1mm at LOAD_SPEED
+    }
+    
+    // Move this amount past the hub switch
+    moveMotor(slotNumber, HUB_OFFSET_AFTER, LOAD_SPEED);
+    Serial.println("[SLOT-" + String(slotNumber) + "] Loaded!");
   }
-  Serial.println("Loaded.");
+  else if (currentLoadedSlot == slotNumber) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] Already loaded!");
+    return;
+  }
+  else if (currentLoadedSlot != slotNumber) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] Cant! "+ String(currentLoadedSlot) + " is currently loaded!");
+    return;
+  }
 }
 
 
@@ -107,21 +112,13 @@ void filamentSwap(uint8_t slotNumber) {
   uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
 
   // Unload the current loaded slot if one is loaded
-  if (currentLoadedSlot == 0) {
-    Serial.println("No filament currently loaded!");
-  }
-  if (currentLoadedSlot == slotNumber) {
-    Serial.println("Slot " + String(currentLoadedSlot) + " is already loaded!");
-  } else if (currentLoadedSlot != 0 && currentLoadedSlot != slotNumber) {
+  if (currentLoadedSlot != 0 && currentLoadedSlot != slotNumber) {
     // Unload current loaded slot
     unloadSlot(currentLoadedSlot);
   }
 
   // Load the specified slot
   loadSlot(slotNumber);
-
-  // Feed 100mm of filament, past the hub
-  moveMotor(slotNumber, 100, LOAD_SPEED);  // Load 100mm at speed 10mm/s
 
   Serial.println("Swap complete.");
 }
@@ -166,13 +163,28 @@ void setup() {
     // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
     digitalWrite(slots[i].enablePin, !MOTOR_ON);
 
-    Serial.println("[Slot-" + String(i+1) + "] " + "initialized!");
+    Serial.println("[SLOT-" + String(i+1) + "] " + "initialized!");
   }
-
 
   Serial.println("Initializing Buffer... ");
   pinMode(BUFFER_PIN, INPUT_PULLUP);
-  Serial.println("[Buffer] initialized!");
+  Serial.println("[BUFFER] initialized!");
+
+
+  // self check
+  // Check which slot is currently loaded, 0 if none
+  int x = 0;
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    if (isSlotLoaded(i)) x++;
+  }
+  if (x>1)  Serial.println("FAILED! More then 1 slot is reporting loaded!");
+  else Serial.println("Hub passed self check!");
+
+  if(digitalRead(BUFFER_PIN)==UNPRESSED && x==0) Serial.println("FAILED! Buffer is jammed or one of the Hub filament detectors isnt detecting filament!");
+  else Serial.println("Buffer passed self check!");
+
+
+  Serial.println("TMS Ready!");
 }
 
 void loop() {
@@ -185,18 +197,15 @@ void loop() {
     // MOVE <slot> <length> <speed>
     // Move a motor slot by a certain amount
     if (command.startsWith("MOVE ")) {
-      // Splitting the command string
       int firstSpace = command.indexOf(' ', 5);
       int secondSpace = command.indexOf(' ', firstSpace + 1);
-
       // Extracting slot number, length, and speed
       int slotNumber = command.substring(5, firstSpace).toInt();
       float length = command.substring(firstSpace + 1, secondSpace).toFloat();
       float speed = command.substring(secondSpace + 1).toFloat();
-
       if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-      Serial.println("Moving Feeder " + String(slotNumber) + " with length " + String(length) + "mm at speed " + String(speed) + "mm/s");
+      Serial.println("Moving Feeder " + String(slotNumber) + " by " + String(length) + "mm at " + String(speed) + "mm/s");
 
       moveMotor(slotNumber, length, speed);
       Serial.println("End.");
@@ -205,15 +214,9 @@ void loop() {
     // SWAP <slot>
     // Do a complete filament swap and handles unloading other slots if necessary
     else if (command.startsWith("SWAP ")) {
-      // Splitting the command string
       int firstSpace = command.indexOf(' ', 5);
-
-      // Extracting slot number
       int slotNumber = command.substring(5, firstSpace).toInt();
-
       if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
-
-      Serial.println("Loading " + String(slotNumber));
 
       filamentSwap(slotNumber);
       Serial.println("End.");
@@ -222,33 +225,20 @@ void loop() {
     // LOAD <slot>
     // Loads a slot
     else if (command.startsWith("LOAD ")) {
-      // Splitting the command string
       int firstSpace = command.indexOf(' ', 5);
-
-      // Extracting slot number
       int slotNumber = command.substring(5, firstSpace).toInt();
-
       if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-      Serial.println("Loading " + String(slotNumber) + "...");
-
       loadSlot(slotNumber);
-
       Serial.println("End.");
     }
 
     // UNLOAD <slot>
     // Unloads a slot
     else if (command.startsWith("UNLOAD ")) {
-      // Splitting the command string
       int firstSpace = command.indexOf(' ', 7);
-
-      // Extracting slot number
       int slotNumber = command.substring(7, firstSpace).toInt();
-
       if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
-
-      Serial.println("Unloading " + String(slotNumber) + "...");
 
       unloadSlot(slotNumber);
       Serial.println("End.");
@@ -261,7 +251,6 @@ void loop() {
       feed();
     }
 
-    // ... Handle other commands ...
     else {
       Serial.println("Invalid command");
     }
