@@ -34,7 +34,7 @@ Slot slots[MAX_SLOTS] = {
 
 // Buffer Settings
 #define BUFFER_PIN 4
-#define BUFFER_DETECT_LEVEL HIGH // level when the buffer has pressure
+#define BUFFER_EMPTY_LEVEL LOW   // level when the buffer has pressure
 #define FEED_SPEED 200           // speed (mm/s) which filament will be feed when theres no pressure on the buffer
 #define PRELOAD_SPEED 100        // speed (mm/s) which the buffer spring will be compressed
 #define BUFFER_PRELOAD_LENGH 15  // how much preload the buffer spring will be kept compressed
