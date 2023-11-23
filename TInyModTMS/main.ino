@@ -126,12 +126,14 @@ void filamentSwap(uint8_t slotNumber) {
 
 void feed() {
 
+  const bool BUFFER_EMPTY = BUFFER_DETECT_LEVEL;
+
   while (true) {
     uint8_t currentLoadedSlot = loadedSlot();
 
     // feed until it finds resistance in the buffed (unclick switch)
     Serial.print("[Buffer] Feeding");
-    while (digitalRead(BUFFER_PIN) == BUFFER_DETECT_LEVEL) {
+    while (digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL) {
       moveMotor(currentLoadedSlot, 1, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
       Serial.print(".");
     }
@@ -142,7 +144,7 @@ void feed() {
     moveMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
 
     Serial.println("[Buffer] Idle");
-    while (digitalRead(BUFFER_PIN) == !BUFFER_DETECT_LEVEL); // wait for buffer to be empty
+    while (digitalRead(BUFFER_PIN) == !BUFFER_EMPTY_LEVEL); // wait for buffer to be empty
   }
 }
 
@@ -180,7 +182,7 @@ void setup() {
   if (x>1)  Serial.println("FAILED! More then 1 slot is reporting loaded!");
   else Serial.println("Hub passed self check!");
 
-  if(digitalRead(BUFFER_PIN)==!BUFFER_DETECT_LEVEL && x==0) Serial.println("FAILED! Buffer is jammed or one of the Hub filament detectors isnt detecting filament!");
+  if(digitalRead(BUFFER_PIN)==!BUFFER_EMPTY_LEVEL && x==0) Serial.println("FAILED! Buffer is jammed or one of the Hub filament detectors isnt detecting filament!");
   else Serial.println("Buffer passed self check!");
 
 
