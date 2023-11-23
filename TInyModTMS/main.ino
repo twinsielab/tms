@@ -1,7 +1,7 @@
 #include "_types.h"
 #include "_config.h"
 
-#define UNPRESSED !PRESSED
+#define UNPRESSED !HUB_DETECT_LEVEL
 #define MOTOR_OFF !MOTOR_ON
 
 // Function to check if a slot is loaded
@@ -9,7 +9,7 @@ bool isSlotLoaded(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
   // Read the hub switch pin state
   bool state = digitalRead(slots[slotNumber - 1].hubSwitchPin);
-  return (state == PRESSED);
+  return (state == HUB_DETECT_LEVEL);
 }
 
 // Check which slot is currently loaded, 0 if none
@@ -131,7 +131,7 @@ void feed() {
 
     // feed until it finds resistance in the buffed (unclick switch)
     Serial.print("[Buffer] Feeding");
-    while (digitalRead(BUFFER_PIN) == PRESSED) {
+    while (digitalRead(BUFFER_PIN) == BUFFER_DETECT_LEVEL) {
       moveMotor(currentLoadedSlot, 1, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
       Serial.print(".");
     }
@@ -142,7 +142,7 @@ void feed() {
     moveMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
 
     Serial.println("[Buffer] Idle");
-    while (digitalRead(BUFFER_PIN) == UNPRESSED); // wait for buffer to be empty
+    while (digitalRead(BUFFER_PIN) == !BUFFER_DETECT_LEVEL); // wait for buffer to be empty
   }
 }
 
@@ -180,7 +180,7 @@ void setup() {
   if (x>1)  Serial.println("FAILED! More then 1 slot is reporting loaded!");
   else Serial.println("Hub passed self check!");
 
-  if(digitalRead(BUFFER_PIN)==UNPRESSED && x==0) Serial.println("FAILED! Buffer is jammed or one of the Hub filament detectors isnt detecting filament!");
+  if(digitalRead(BUFFER_PIN)==!BUFFER_DETECT_LEVEL && x==0) Serial.println("FAILED! Buffer is jammed or one of the Hub filament detectors isnt detecting filament!");
   else Serial.println("Buffer passed self check!");
 
 
