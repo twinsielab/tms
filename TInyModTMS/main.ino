@@ -120,8 +120,8 @@ void moveFeederAndSpoolMotor(uint8_t slotNumber, float moveDistance, float speed
   unsigned long feederNextStepTime = 0;
   unsigned long spoolNextStepTime = 0;
 
-  bool feederStepState;
-  bool spoolStepState;
+  bool feederStepState = LOW;
+  bool spoolStepState = LOW;
 
   unsigned long startTime = micros();
   while (feederSteps > 0 || spoolSteps > 0) {
@@ -143,7 +143,7 @@ void moveFeederAndSpoolMotor(uint8_t slotNumber, float moveDistance, float speed
   }
 
   // Disable both motors
-  digitalWrite(slot.feederEnablePin, MOTOR_OFF);
+  // digitalWrite(slot.feederEnablePin, MOTOR_OFF);
   digitalWrite(slot.spoolEnablePin, MOTOR_OFF);
 }
 
