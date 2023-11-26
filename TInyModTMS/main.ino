@@ -1,5 +1,5 @@
-#include "_types.h"
-#include "_config.h"
+#include "types.h"
+#include "config.h"
 
 #define UNPRESSED !SELECTOR_DETECT_LEVEL
 #define MOTOR_OFF !MOTOR_ON
