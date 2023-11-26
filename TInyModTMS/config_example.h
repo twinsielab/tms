@@ -4,22 +4,18 @@
 Slot slots[MAX_SLOTS] = {
   // SLOT-1
   {
-    6,        // selectorSwitchPin (filament detector pin in the selector)
-    7,        // enablePin    (driver enable pin)
-    9,        // dirPin       (driver direction pin)
-    8,        // stepPin      (driver step pin)
-    LOW,      // feedDir      (direction which the motor feeds)
-    100 / 2,  // stepsPerMM
+    6,        // selectorSwitchPin  (filament detector pin in the selector)
+    7,        // feederEnablePin    (driver enable pin)
+    9,        // feederDirPin       (driver direction pin)
+    8,        // feederStepPin      (driver step pin)
+    LOW,      // feedDir            (direction which the motor feeds)
+    100 / 2,  // feederStepsPerMM
+    7,        // spoolEnablePin    (driver enable pin)
+    9,        // spoolDirPin       (driver direction pin)
+    8,        // spoolStepPin      (driver step pin)
+    LOW,      // spooldDir         (direction which the motor feeds)
+    100 / 2,  // spoolStepsPerMM
   },
-  // SLOT-2
-  {
-    5,        // selectorSwitchPin (filament detector pin in the selector)
-    12,       // enablePin    (driver enable pin)
-    10,       // dirPin       (driver direction pin)
-    11,       // stepPin      (driver step pin)
-    LOW,      // feedDir      (direction which the motor feeds)
-    100 / 2,  // stepsPerMM
-  }
 };
 
 // Motor Settings

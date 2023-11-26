@@ -31,33 +31,63 @@ uint8_t loadedSlot() {
 }
 
 // Function to move a motor associated with a given slot
-void moveMotor(uint8_t slotNumber, float moveDistance, float speed) {
+void moveFeederMotor(uint8_t slotNumber, float moveDistance, float speed) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
   Slot slot = slots[slotNumber - 1];
 
   // Calculate the number of steps and step delay
-  unsigned long steps = abs(moveDistance * slot.stepsPerMM);      // Convert distance to steps
-  unsigned int stepDelay = 1000000 / (speed * slot.stepsPerMM);  // Calculate delay in microseconds
+  unsigned long steps = abs(moveDistance * slot.feederStepsPerMM);      // Convert distance to steps
+  unsigned int stepDelay = 1000000 / (speed * slot.feederStepsPerMM);  // Calculate delay in microseconds
 
   // Determine direction
   bool dir = (moveDistance >= 0) ? slot.feedDir : !slot.feedDir;
-  digitalWrite(slot.dirPin, dir);
+  digitalWrite(slot.feederDirPin, dir);
 
   // Enable motor
-  digitalWrite(slot.enablePin, MOTOR_ON);
+  digitalWrite(slot.feederEnablePin, MOTOR_ON);
 
   // Perform steps with delay
   for (unsigned long i = 0; i < steps; i++) {
-    digitalWrite(slot.stepPin, HIGH);
+    digitalWrite(slot.feederStepPin, HIGH);
     delayMicroseconds(stepDelay);
-    digitalWrite(slot.stepPin, LOW);
+    digitalWrite(slot.feederStepPin, LOW);
     delayMicroseconds(stepDelay);
   }
 
   // Disable motor
-  // digitalWrite(slot.enablePin, MOTOR_OFF);
+  // digitalWrite(slot.feederEnablePin, MOTOR_OFF);
 }
+
+// Function to move a motor associated with a given slot
+void moveSpoolMotor(uint8_t slotNumber, float moveDistance, float speed) {
+  if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
+
+  Slot slot = slots[slotNumber - 1];
+
+  // Calculate the number of steps and step delay
+  unsigned long steps = abs(moveDistance * slot.spoolStepsPerMM);      // Convert distance to steps
+  unsigned int stepDelay = 1000000 / (speed * slot.spoolStepsPerMM);  // Calculate delay in microseconds
+
+  // Determine direction
+  bool dir = (moveDistance >= 0) ? slot.feedDir : !slot.feedDir;
+  digitalWrite(slot.spoolDirPin, dir);
+
+  // Enable motor
+  digitalWrite(slot.spoolEnablePin, MOTOR_ON);
+
+  // Perform steps with delay
+  for (unsigned long i = 0; i < steps; i++) {
+    digitalWrite(slot.spoolStepPin, HIGH);
+    delayMicroseconds(stepDelay);
+    digitalWrite(slot.spoolStepPin, LOW);
+    delayMicroseconds(stepDelay);
+  }
+
+  // Disable motor
+  // digitalWrite(slot.spoolEnablePin, MOTOR_OFF);
+}
+
 
 
 void unloadSlot(uint8_t slotNumber) {
@@ -73,19 +103,24 @@ void unloadSlot(uint8_t slotNumber) {
 
   // Load by backward forward until unloaded
   while (!isSelectorLoaded()) {
-    moveMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
   }
 
   // Unload by moving backward until not loaded
   while (isSlotLoaded(slotNumber)) {
-    moveMotor(slotNumber, -1, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveFeederMotor(slotNumber, -1, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveSpoolMotor(slotNumber, -1, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
 
   // retract this amount past the switch
-  moveMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
+  moveFeederMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
+  moveSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
 
   // Turn motor off
-  digitalWrite(slots[slotNumber-1].enablePin, MOTOR_OFF);
+  digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
+  digitalWrite(slots[slotNumber-1].spoolEnablePin, MOTOR_OFF);
+
 
   Serial.println("[SLOT-" + String(slotNumber) + "] Unloaded!");
 }
@@ -100,16 +135,19 @@ void loadSlot(uint8_t slotNumber) {
 
     // Load by moving forward until loaded
     while (!isSlotLoaded(slotNumber)) {
-      moveMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
 
     // Load by moving forward until loaded
     while (!isSelectorLoaded()) {
-      moveMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
     
     // Move this amount past the selector output
-    moveMotor(slotNumber, SELECTOR_OFFSET_AFTER, LOAD_SPEED);
+    moveFeederMotor(slotNumber, SELECTOR_OFFSET_AFTER, LOAD_SPEED);
+    moveSpoolMotor(slotNumber, SELECTOR_OFFSET_AFTER, LOAD_SPEED);
     Serial.println("[SLOT-" + String(slotNumber) + "] Loaded!");
   }
   else if (currentLoadedSlot == slotNumber) {
@@ -150,14 +188,14 @@ void feed() {
     // feed until it finds resistance in the buffed (unclick switch)
     Serial.print("[Buffer] Feeding");
     while (digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL) {
-      moveMotor(currentLoadedSlot, 1, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
+      moveFeederMotor(currentLoadedSlot, 1, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
       Serial.print(".");
     }
     Serial.println("");
 
     // compress the spring by fixed amount
     Serial.println("[Buffer] Preloading...");
-    moveMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
+    moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
 
     Serial.println("[Buffer] Idle");
     while (digitalRead(BUFFER_PIN) == !BUFFER_EMPTY_LEVEL); // wait for buffer to be empty
@@ -173,13 +211,21 @@ void setup() {
   // Configure pins for each slot
   Serial.println("Initializing Slots... " + String(MAX_SLOTS));
   for (uint8_t i = 0; i < MAX_SLOTS; i++) {
-    pinMode(slots[i].enablePin, OUTPUT);
-    pinMode(slots[i].dirPin, OUTPUT);
-    pinMode(slots[i].stepPin, OUTPUT);
+    pinMode(slots[i].feederEnablePin, OUTPUT);
+    pinMode(slots[i].feederDirPin, OUTPUT);
+    pinMode(slots[i].feederStepPin, OUTPUT);
     pinMode(slots[i].selectorSwitchPin, INPUT_PULLUP);
 
     // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
-    digitalWrite(slots[i].enablePin, !MOTOR_ON);
+    digitalWrite(slots[i].feederEnablePin, !MOTOR_ON);
+
+
+    pinMode(slots[i].spoolEnablePin, OUTPUT);
+    pinMode(slots[i].spoolDirPin, OUTPUT);
+    pinMode(slots[i].spoolStepPin, OUTPUT);
+
+    // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
+    digitalWrite(slots[i].spoolEnablePin, !MOTOR_ON);
 
     Serial.println("[SLOT-" + String(i+1) + "] " + "initialized!");
   }
@@ -251,9 +297,28 @@ void loop() {
 
       Serial.println("Moving Feeder " + String(slotNumber) + " by " + String(length) + "mm at " + String(speed) + "mm/s");
 
-      moveMotor(slotNumber, length, speed);
+      moveFeederMotor(slotNumber, length, speed);
       Serial.println("End.");
     }
+
+    // ROLL <slot> <length> <speed>
+    // Move a motor slot by a certain amount
+    if (command.startsWith("ROLL ")) {
+      int firstSpace = command.indexOf(' ', 5);
+      int secondSpace = command.indexOf(' ', firstSpace + 1);
+      // Extracting slot number, length, and speed
+      int slotNumber = command.substring(5, firstSpace).toInt();
+      float length = command.substring(firstSpace + 1, secondSpace).toFloat();
+      float speed = command.substring(secondSpace + 1).toFloat();
+      if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
+
+      Serial.println("Moving Spool " + String(slotNumber) + " by " + String(length) + "mm at " + String(speed) + "mm/s");
+
+      moveSpoolMotor(slotNumber, length, speed);
+      Serial.println("End.");
+    }
+
+    
 
     // SWAP <slot>
     // Do a complete filament swap and handles unloading other slots if necessary
