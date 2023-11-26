@@ -18,7 +18,8 @@ Slot slots[MAX_SLOTS] = {
   },
 };
 
-#define SPOOL_REWIND_OVERSHOOT 30
+#define SPOOL_REWIND_OVERSHOOT 150
+#define JERKY_SYNC_LENGTH 10
 
 // Motor Settings
 #define MOTOR_ON LOW             // state which the motor is turned on by the driver

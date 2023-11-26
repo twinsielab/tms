@@ -103,14 +103,14 @@ void unloadSlot(uint8_t slotNumber) {
 
   // Load by backward forward until unloaded
   while (!isSelectorLoaded()) {
-    moveFeederMotor(slotNumber, 10, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-    moveSpoolMotor(slotNumber, 10, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveFeederMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveSpoolMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
   }
 
   // Unload by moving backward until not loaded
   while (isSlotLoaded(slotNumber)) {
-    moveFeederMotor(slotNumber, -10, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
-    moveSpoolMotor(slotNumber, -10, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveFeederMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveSpoolMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
 
   // retract this amount past the switch
