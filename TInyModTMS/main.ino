@@ -1,33 +1,34 @@
 #include "types.h"
 #include "config.h"
 
-#define UNPRESSED !SELECTOR_DETECT_LEVEL
 #define MOTOR_OFF !MOTOR_ON
 
+namespace Selector {
 
-// Function to check if a slot is loaded
-bool isSelectorLoaded() {
-  // Read the selector switch pin state
-  bool state = digitalRead(SELECTOR_END_PIN);
-  return (state == SELECTOR_DETECT_LEVEL);
-}
-
-// Function to check if a slot is loaded
-bool isSlotLoaded(uint8_t slotNumber) {
-  if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
-  // Read the selector switch pin state
-  bool state = digitalRead(slots[slotNumber - 1].selectorInputPin);
-  return (state == SELECTOR_DETECT_LEVEL);
-}
-
-// Check which slot is currently loaded, 0 if none
-uint8_t loadedSlot() {
-  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
-    if (isSlotLoaded(i)) {
-      return i;  // Return the number of the loaded slot
-    }
+  // Function to check if the selector is fully loaded
+  bool isLoaded() {
+    // Read the selector switch pin state
+    bool state = digitalRead(SELECTOR_END_PIN);
+    return (state == SELECTOR_DETECT_LEVEL);
   }
-  return 0;  // Return 0 if no slots are loaded
+
+  // Function to check if a slot is loaded
+  bool inputHasFilament(uint8_t slotNumber) {
+    if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
+    // Read the selector switch pin state
+    bool state = digitalRead(slots[slotNumber - 1].selectorInputPin);
+    return (state == SELECTOR_DETECT_LEVEL);
+  }
+
+  // Check which slot is currently loaded, 0 if none
+  uint8_t getLoadedInput() {
+    for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+      if (inputHasFilament(i)) {
+        return i;  // Return the number of the loaded slot
+      }
+    }
+    return 0;  // Return 0 if no slots are loaded
+  }
 }
 
 // Function to move a motor associated with a given slot
@@ -154,7 +155,7 @@ void moveFeederAndSpoolMotor(uint8_t slotNumber, float moveDistance, float speed
 void unloadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-  uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
+  uint8_t currentLoadedSlot = Selector::getLoadedInput();  // Check if any slot is currently loaded
   if (currentLoadedSlot != slotNumber) {
     Serial.println("[SLOT-" + String(slotNumber) + "] Already unloaded!");
     return;
@@ -163,14 +164,14 @@ void unloadSlot(uint8_t slotNumber) {
   Serial.println("[SLOT-" + String(slotNumber) + "] Unloading...");
 
   // Load by backward forward until unloaded
-  while (!isSelectorLoaded()) {
+  while (!Selector::isLoaded()) {
     moveFeederAndSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     // moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     // moveSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
   }
 
   // Unload by moving backward until not loaded
-  while (isSlotLoaded(slotNumber)) {
+  while (Selector::inputHasFilament(slotNumber)) {
     moveFeederAndSpoolMotor(slotNumber, -MOVE_READ_DISTANCE, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
     // moveFeederMotor(slotNumber, -MOVE_READ_DISTANCE, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
     // moveSpoolMotor(slotNumber, -MOVE_READ_DISTANCE, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
@@ -196,18 +197,18 @@ void unloadSlot(uint8_t slotNumber) {
 void loadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-  uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
+  uint8_t currentLoadedSlot = Selector::getLoadedInput();  // Check if any slot is currently loaded
   if (currentLoadedSlot == 0) {
     Serial.println("[SLOT-" + String(slotNumber) + "] Loading...");
 
     // Load by moving forward until loaded
-    while (!isSlotLoaded(slotNumber)) {
+    while (!Selector::inputHasFilament(slotNumber)) {
       moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
       // moveSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
 
     // Load by moving forward until loaded
-    while (!isSelectorLoaded()) {
+    while (!Selector::isLoaded()) {
       moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
       // moveSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
@@ -231,7 +232,7 @@ void loadSlot(uint8_t slotNumber) {
 void filamentSwap(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
-  uint8_t currentLoadedSlot = loadedSlot();  // Check if any slot is currently loaded
+  uint8_t currentLoadedSlot = Selector::getLoadedInput();  // Check if any slot is currently loaded
 
   // Unload the current loaded slot if one is loaded
   if (currentLoadedSlot != 0 && currentLoadedSlot != slotNumber) {
@@ -249,7 +250,7 @@ void filamentSwap(uint8_t slotNumber) {
 void feed() {
 
   while (true) {
-    uint8_t currentLoadedSlot = loadedSlot();
+    uint8_t currentLoadedSlot = Selector::getLoadedInput();
 
     // feed until it finds resistance in the buffed (unclick switch)
     Serial.print("[Buffer] Feeding");
@@ -314,7 +315,7 @@ void setup() {
   // Check which slot is currently loaded, 0 if none
   int selectorLoadedCount = 0;
   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
-    if (isSlotLoaded(i)) {
+    if (Selector::inputHasFilament(i)) {
       selectorLoadedCount++;
       Serial.println("[SELECTOR] Input " + String(i) + " has filament");
     }
@@ -327,7 +328,7 @@ void setup() {
     Serial.println("[SELECTOR] ERROR! More then 1 input is has filament!");
   }
   
-  bool isSelectorLoaded = digitalRead(SELECTOR_END_PIN) == SELECTOR_DETECT_LEVEL;
+  bool isSelectorLoaded = Selector::isLoaded();
   if (isSelectorLoaded) Serial.println("[SELECTOR] Output has filament");
   else Serial.println("[SELECTOR] Output is empty");
   
