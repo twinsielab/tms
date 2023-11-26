@@ -23,7 +23,7 @@ Slot slots[MAX_SLOTS] = {
 #define UNLOAD_SPEED 400           // speed (mm/s) for the unloading filament sequence
 #define SPOOL_EXTRA_REWIND 150     // rewind the spool by an extra distance (mm) after unloading
 #define MOTOR_ON LOW               // state which the motor is turned on by the driver
-#define JERKY_SYNC_LENGTH 30
+#define MOVE_READ_DISTANCE 1       // distance (mm) the filament moves between every sensor read
 
 // Selector Settings
 #define SELECTOR_END_PIN 3          // filament detector pin at the end of selector

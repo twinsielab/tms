@@ -164,16 +164,16 @@ void unloadSlot(uint8_t slotNumber) {
 
   // Load by backward forward until unloaded
   while (!isSelectorLoaded()) {
-    moveFeederAndSpoolMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-    // moveFeederMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-    // moveSpoolMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveFeederAndSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    // moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    // moveSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
   }
 
   // Unload by moving backward until not loaded
   while (isSlotLoaded(slotNumber)) {
-    moveFeederAndSpoolMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
-    // moveFeederMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
-    // moveSpoolMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveFeederAndSpoolMotor(slotNumber, -MOVE_READ_DISTANCE, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    // moveFeederMotor(slotNumber, -MOVE_READ_DISTANCE, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    // moveSpoolMotor(slotNumber, -MOVE_READ_DISTANCE, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
 
   // retract this amount past the switch
@@ -202,14 +202,14 @@ void loadSlot(uint8_t slotNumber) {
 
     // Load by moving forward until loaded
     while (!isSlotLoaded(slotNumber)) {
-      moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-      // moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      // moveSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
 
     // Load by moving forward until loaded
     while (!isSelectorLoaded()) {
-      moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-      // moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      // moveSpoolMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
     
     // Move this amount past the selector output
@@ -254,7 +254,7 @@ void feed() {
     // feed until it finds resistance in the buffed (unclick switch)
     Serial.print("[Buffer] Feeding");
     while (digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL) {
-      moveFeederMotor(currentLoadedSlot, 1, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
+      moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
       Serial.print(".");
     }
     Serial.println("");
