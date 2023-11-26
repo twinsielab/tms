@@ -491,6 +491,6 @@ void loop() {
     }
 
 
-    refill();
   }
+    refill();
 }
