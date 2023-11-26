@@ -258,6 +258,29 @@ void filamentSwap(uint8_t slotNumber) {
 }
 
 
+void feed() {
+
+  while (true) {
+    uint8_t currentLoadedSlot = Selector::getLoadedInput();
+
+    // feed until it finds resistance in the buffed (unclick switch)
+    Serial.print("[Buffer] Feeding");
+    while (digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL) {
+      moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
+      Serial.print(".");
+    }
+    Serial.println("");
+
+    // compress the spring by fixed amount
+    Serial.println("[Buffer] Preloading...");
+    moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
+
+    Serial.println("[Buffer] Idle");
+    while (digitalRead(BUFFER_PIN) == !BUFFER_EMPTY_LEVEL); // wait for buffer to be empty
+  }
+}
+
+
 void refill() {
 
 
