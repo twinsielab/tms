@@ -283,16 +283,13 @@ void feed() {
 
 void refill() {
 
-
-  while (true) {
      for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
       if (Selector::inputHasFilament(i)==false && slotHasFilament(i)) {
         Serial.println("Filament detected!");
         loadSlot(i);
-        break;
+        unloadSlot(i);
       }
      }
-  }
 }
 
 
@@ -492,5 +489,8 @@ void loop() {
     else {
       Serial.println("Invalid command!");
     }
+
+
+    refill();
   }
 }
