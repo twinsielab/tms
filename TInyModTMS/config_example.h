@@ -25,6 +25,7 @@ Slot slots[MAX_SLOTS] = {
 #define SPOOL_EXTRA_REWIND 150.0     // rewind the spool by an extra distance (mm) after unloading
 #define MOTOR_ON LOW                 // state which the motor is turned on by the driver
 #define MOVE_READ_DISTANCE 1.0       // distance (mm) the filament moves between every sensor read
+#define SLOT_DETECT_LEVEL LOW      // level when the Slot has filament
 
 // Selector Settings
 #define SELECTOR_END_PIN 3           // filament detector pin at the end of selector

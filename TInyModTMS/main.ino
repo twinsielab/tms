@@ -3,8 +3,14 @@
 
 #define MOTOR_OFF !MOTOR_ON
 
-namespace Selector {
+bool slotHasFilament(uint8_t slotNumber) {
+  if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
+  // Read the slot filament sensor
+  bool state = digitalRead(slots[slotNumber - 1].filamentSensorPin);
+  return (state == SLOT_DETECT_LEVEL);
+}
 
+namespace Selector {
   // Function to check if the selector is fully loaded
   bool isLoaded() {
     // Read the selector switch pin state
@@ -196,6 +202,11 @@ void unloadSlot(uint8_t slotNumber) {
 
 void loadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
+  
+  if(!slotHasFilament(slotNumber)) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] No filament!");
+    return;
+  }
 
   uint8_t currentLoadedSlot = Selector::getLoadedInput();  // Check if any slot is currently loaded
   if (currentLoadedSlot == 0) {
@@ -312,12 +323,22 @@ void setup() {
   // ---- RUN SELF CHECKS ----
   Serial.println("\n[TMS] Running self check...");
 
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    Serial.print("[SLOT-" + String(i) + "] ");
+    if (slotHasFilament(i)) Serial.println("Has filament");
+    else Serial.println("Is empty");
+  }
+
   // Check which slot is currently loaded, 0 if none
   int selectorLoadedCount = 0;
   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+      Serial.print("[SELECTOR] Input " + String(i) + ": ");
     if (Selector::inputHasFilament(i)) {
+      Serial.println("Has filament");
       selectorLoadedCount++;
-      Serial.println("[SELECTOR] Input " + String(i) + " has filament");
+    }
+    else {
+      Serial.println("Is empty");
     }
   }
 
@@ -326,6 +347,12 @@ void setup() {
   }
   else if (selectorLoadedCount>1) {
     Serial.println("[SELECTOR] ERROR! More then 1 input is has filament!");
+  }
+
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    if (Selector::inputHasFilament(i) && !slotHasFilament(i)) {
+      Serial.println("[TMS] ERROR! There's filament on the Selector input "+String(i)+", but Slot-"+String(i)+" is empty!");
+    }
   }
   
   bool isSelectorLoaded = Selector::isLoaded();
@@ -356,7 +383,6 @@ void loop() {
     // Read the incoming command
     String command = Serial.readStringUntil('\n');
     command.toUpperCase();  // Convert the command to uppercase for case-insensitive comparison
-
 
     // MOVE <slot> <length> <speed>
     // Move a motor slot by a certain amount
@@ -390,7 +416,7 @@ void loop() {
       Serial.println("Moving Spool " + String(slotNumber) + " by " + String(length) + "mm at " + String(speed) + "mm/s");
 
       moveSpoolMotor(slotNumber, length, speed);
-      Serial.println("End.");
+      Serial.println("End."); 
     }
 
 
