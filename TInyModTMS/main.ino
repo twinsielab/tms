@@ -143,8 +143,7 @@ void filamentSwap(uint8_t slotNumber) {
 
 void feed() {
 
-  const bool BUFFER_EMPTY = BUFFER_DETECT_LEVEL;
-
+  
   while (true) {
     uint8_t currentLoadedSlot = loadedSlot();
 
@@ -213,7 +212,9 @@ void setup() {
   }
   
   bool isSelectorLoaded = digitalRead(SELECTOR_END_PIN) == SELECTOR_DETECT_LEVEL;
-  Serial.println("[SELECTOR] Loaded: " + (isSelectorLoaded?"YES":"NO"));
+  if (isSelectorLoaded) Serial.print("[SELECTOR] Loaded: ");
+  if (isSelectorLoaded) Serial.println("Yes");
+  else Serial.println("No");
   
   if (selectorLoadedCount==0 && isSelectorLoaded) {
     Serial.println("[SELECTOR] FAILED! All the inputs are empty but the Selector output has filament!");
