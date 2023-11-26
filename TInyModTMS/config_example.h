@@ -4,6 +4,7 @@
 Slot slots[MAX_SLOTS] = {
   // SLOT-1
   {
+     0,               // filamentSensorPin   filament sensor pin on the the slot
      5,               // selectorInputPin    filament detector pin in the selector
      6,               // feederEnablePin     feeder driver enable pin
      7,               // feederDirPin        feeder driver direction pin

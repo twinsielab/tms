@@ -277,13 +277,15 @@ void setup() {
   // Configure Slots
   Serial.println("Initializing " + String(MAX_SLOTS) + " slots... ");
   for (uint8_t i = 0; i < MAX_SLOTS; i++) {
-    // Feeder
+    pinMode(slots[i].filamentSensorPin, INPUT_PULLUP);
+    
+    // Feeder Motor
     pinMode(slots[i].feederEnablePin, OUTPUT);
     pinMode(slots[i].feederDirPin, OUTPUT);
     pinMode(slots[i].feederStepPin, OUTPUT);
     digitalWrite(slots[i].feederEnablePin, !MOTOR_ON); // Turn motor off by default
 
-    // Spool
+    // Spool Motor
     pinMode(slots[i].spoolEnablePin, OUTPUT);
     pinMode(slots[i].spoolDirPin, OUTPUT);
     pinMode(slots[i].spoolStepPin, OUTPUT);
