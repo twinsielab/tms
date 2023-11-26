@@ -1,10 +1,10 @@
 #define MAX_SLOTS 2 // Define the maximum number of slots
 
-// Slot Settings
+// Per Slot Settings
 Slot slots[MAX_SLOTS] = {
   // SLOT-1
   {
-    6,        // selectorSwitchPin  (filament detector pin in the selector)
+    6,        // selectorInputPin  (filament detector pin in the selector)
     7,        // feederEnablePin    (driver enable pin)
     9,        // feederDirPin       (driver direction pin)
     8,        // feederStepPin      (driver step pin)
@@ -18,7 +18,8 @@ Slot slots[MAX_SLOTS] = {
   },
 };
 
-#define SPOOL_REWIND_OVERSHOOT 150
+// Global Settings
+#define SPOOL_EXTRA_REWIND 150  // rewind the spool by an extra amount after unloading
 #define JERKY_SYNC_LENGTH 10
 
 // Motor Settings

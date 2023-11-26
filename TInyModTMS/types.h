@@ -1,6 +1,6 @@
 // Define a struct to hold slot information
 struct Slot {
-  uint8_t selectorSwitchPin; // selectorSwitchPin (filament detector in the selector slot)
+  uint8_t selectorInputPin; // selectorInputPin (filament detector in the selector slot)
 
   uint8_t feederEnablePin; // feederEnablePin  (driver enable pin)
   uint8_t feederDirPin; // feederDirPin (driver direction pin)

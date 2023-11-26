@@ -16,7 +16,7 @@ bool isSelectorLoaded() {
 bool isSlotLoaded(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
   // Read the selector switch pin state
-  bool state = digitalRead(slots[slotNumber - 1].selectorSwitchPin);
+  bool state = digitalRead(slots[slotNumber - 1].selectorInputPin);
   return (state == SELECTOR_DETECT_LEVEL);
 }
 
@@ -37,7 +37,7 @@ void moveFeederMotor(uint8_t slotNumber, float moveDistance, float speed) {
   Slot slot = slots[slotNumber - 1];
 
   // Calculate the number of steps and step delay
-  unsigned long steps = abs(moveDistance * slot.feederStepsPerMM);      // Convert distance to steps
+  unsigned long steps = abs(moveDistance * slot.feederStepsPerMM);     // Convert distance to steps
   unsigned int stepDelay = 1000000 / (speed * slot.feederStepsPerMM);  // Calculate delay in microseconds
 
   // Determine direction
@@ -48,10 +48,10 @@ void moveFeederMotor(uint8_t slotNumber, float moveDistance, float speed) {
   digitalWrite(slot.feederEnablePin, MOTOR_ON);
 
   // Perform steps with delay
+  bool stepState;
   for (unsigned long i = 0; i < steps; i++) {
-    digitalWrite(slot.feederStepPin, HIGH);
-    delayMicroseconds(stepDelay);
-    digitalWrite(slot.feederStepPin, LOW);
+    stepState = !stepState;
+    digitalWrite(slot.feederStepPin, stepState);
     delayMicroseconds(stepDelay);
   }
 
@@ -66,27 +66,88 @@ void moveSpoolMotor(uint8_t slotNumber, float moveDistance, float speed) {
   Slot slot = slots[slotNumber - 1];
 
   // Calculate the number of steps and step delay
-  unsigned long steps = abs(moveDistance * slot.spoolStepsPerMM);      // Convert distance to steps
+  unsigned long steps = abs(moveDistance * slot.spoolStepsPerMM);     // Convert distance to steps
   unsigned int stepDelay = 1000000 / (speed * slot.spoolStepsPerMM);  // Calculate delay in microseconds
 
   // Determine direction
-  bool dir = (moveDistance >= 0) ? slot.feedDir : !slot.feedDir;
+  bool dir = (moveDistance >= 0) ? slot.spoolDir : !slot.spoolDir;
   digitalWrite(slot.spoolDirPin, dir);
 
   // Enable motor
   digitalWrite(slot.spoolEnablePin, MOTOR_ON);
 
   // Perform steps with delay
+  bool stepState;
   for (unsigned long i = 0; i < steps; i++) {
-    digitalWrite(slot.spoolStepPin, HIGH);
-    delayMicroseconds(stepDelay);
-    digitalWrite(slot.spoolStepPin, LOW);
+    stepState = !stepState;
+    digitalWrite(slot.spoolStepPin, stepState);
     delayMicroseconds(stepDelay);
   }
 
   // Disable motor
   // digitalWrite(slot.spoolEnablePin, MOTOR_OFF);
 }
+
+
+void moveFeederAndSpoolMotor(uint8_t slotNumber, float moveDistance, float speed) {
+  if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
+
+  Slot slot = slots[slotNumber - 1];
+
+  // Calculate the number of steps for feeder and spool
+  unsigned long feederSteps = abs(moveDistance * slot.feederStepsPerMM);      
+  unsigned long spoolSteps = abs(moveDistance * slot.spoolStepsPerMM);      
+
+  // Determine direction for both motors
+  bool feederDir = (moveDistance >= 0) ? slot.feedDir : !slot.feedDir;
+  bool spoolDir = (moveDistance >= 0) ? slot.spoolDir : !slot.spoolDir;
+  
+  // Set direction
+  digitalWrite(slot.feederDirPin, feederDir);
+  digitalWrite(slot.spoolDirPin, spoolDir);
+
+  // Enable both motors
+  digitalWrite(slot.feederEnablePin, MOTOR_ON);
+  digitalWrite(slot.spoolEnablePin, MOTOR_ON);
+
+  // Calculate total movement time in microseconds
+  unsigned long totalTime = abs(moveDistance) / speed * 1000000;
+
+  // Calculate step intervals for each motor
+  unsigned long feederStepInterval = totalTime / feederSteps;
+  unsigned long spoolStepInterval = totalTime / spoolSteps;
+
+  unsigned long feederNextStepTime = 0;
+  unsigned long spoolNextStepTime = 0;
+
+  bool feederStepState;
+  bool spoolStepState;
+
+  unsigned long startTime = micros();
+  while (feederSteps > 0 || spoolSteps > 0) {
+    unsigned long currentTime = micros() - startTime;
+    
+    if (feederSteps > 0 && currentTime >= feederNextStepTime) {
+      feederStepState = !feederStepState;
+      digitalWrite(slot.feederStepPin, feederStepState);
+      feederNextStepTime += feederStepInterval;
+      feederSteps--;
+    }
+
+    if (spoolSteps > 0 && currentTime >= spoolNextStepTime) {
+      spoolStepState = !spoolStepState;
+      digitalWrite(slot.spoolStepPin, spoolStepState);
+      spoolNextStepTime += spoolStepInterval;
+      spoolSteps--;
+    }
+  }
+
+  // Disable both motors
+  digitalWrite(slot.feederEnablePin, MOTOR_OFF);
+  digitalWrite(slot.spoolEnablePin, MOTOR_OFF);
+}
+
+
 
 
 
@@ -103,22 +164,25 @@ void unloadSlot(uint8_t slotNumber) {
 
   // Load by backward forward until unloaded
   while (!isSelectorLoaded()) {
-    moveFeederMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-    moveSpoolMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveFeederAndSpoolMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    // moveFeederMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    // moveSpoolMotor(slotNumber, JERKY_SYNC_LENGTH, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
   }
 
   // Unload by moving backward until not loaded
   while (isSlotLoaded(slotNumber)) {
-    moveFeederMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
-    moveSpoolMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveFeederAndSpoolMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    // moveFeederMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    // moveSpoolMotor(slotNumber, -JERKY_SYNC_LENGTH, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
 
   // retract this amount past the switch
-  moveFeederMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
-  moveSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
+  moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
+  // moveFeederMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
+  // moveSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
 
 
-  moveSpoolMotor(slotNumber, -SPOOL_REWIND_OVERSHOOT, UNLOAD_SPEED);
+  moveSpoolMotor(slotNumber, -SPOOL_EXTRA_REWIND, UNLOAD_SPEED);
 
   // Turn motor off
   digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
@@ -184,7 +248,6 @@ void filamentSwap(uint8_t slotNumber) {
 
 void feed() {
 
-  
   while (true) {
     uint8_t currentLoadedSlot = loadedSlot();
 
@@ -217,7 +280,7 @@ void setup() {
     pinMode(slots[i].feederEnablePin, OUTPUT);
     pinMode(slots[i].feederDirPin, OUTPUT);
     pinMode(slots[i].feederStepPin, OUTPUT);
-    pinMode(slots[i].selectorSwitchPin, INPUT_PULLUP);
+    pinMode(slots[i].selectorInputPin, INPUT_PULLUP);
 
     // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
     digitalWrite(slots[i].feederEnablePin, !MOTOR_ON);
