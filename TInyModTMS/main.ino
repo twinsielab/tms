@@ -327,7 +327,7 @@ void setup() {
   }
   
   bool isSelectorLoaded = digitalRead(SELECTOR_END_PIN) == SELECTOR_DETECT_LEVEL;
-  if (isSelectorLoaded) Serial.print("[SELECTOR] Loaded: ");
+  Serial.print("[SELECTOR] Loaded: ");
   if (isSelectorLoaded) Serial.println("Yes");
   else Serial.println("No");
   
