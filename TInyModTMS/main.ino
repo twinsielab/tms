@@ -327,9 +327,8 @@ void setup() {
   }
   
   bool isSelectorLoaded = digitalRead(SELECTOR_END_PIN) == SELECTOR_DETECT_LEVEL;
-  Serial.print("[SELECTOR] Loaded: ");
-  if (isSelectorLoaded) Serial.println("Yes");
-  else Serial.println("No");
+  if (isSelectorLoaded) Serial.println("[SELECTOR] output has filament");
+  else Serial.println("[SELECTOR] output is empty");
   
   if (selectorLoadedCount==0 && isSelectorLoaded) {
     Serial.println("[SELECTOR] FAILED! All the inputs are empty but the Selector output has filament!");
