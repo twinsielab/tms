@@ -277,15 +277,18 @@ void setup() {
   // Configure pins for each slot
   Serial.println("Initializing Slots... " + String(MAX_SLOTS));
   for (uint8_t i = 0; i < MAX_SLOTS; i++) {
+
+    pinMode(slots[i].selectorInputPin, INPUT_PULLUP);
+
+    // feeder
     pinMode(slots[i].feederEnablePin, OUTPUT);
     pinMode(slots[i].feederDirPin, OUTPUT);
     pinMode(slots[i].feederStepPin, OUTPUT);
-    pinMode(slots[i].selectorInputPin, INPUT_PULLUP);
 
     // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
     digitalWrite(slots[i].feederEnablePin, !MOTOR_ON);
 
-
+    // spool
     pinMode(slots[i].spoolEnablePin, OUTPUT);
     pinMode(slots[i].spoolDirPin, OUTPUT);
     pinMode(slots[i].spoolStepPin, OUTPUT);
@@ -305,7 +308,7 @@ void setup() {
 
 
 
-  Serial.println("[TMS] running self check...");
+  Serial.println("\n[TMS] running self check...");
   // self check
   // Check which slot is currently loaded, 0 if none
   int selectorLoadedCount = 0;
@@ -335,12 +338,12 @@ void setup() {
 
 
   if (digitalRead(BUFFER_PIN)==!BUFFER_EMPTY_LEVEL && selectorLoadedCount==0) {
-    Serial.println("FAILED! Buffer is jammed or one of the Selector filament detectors isn't detecting filament!");
+    Serial.println("FAILED! Buffer is jammed or one of the Selector isn't detecting filament!");
   }
   else Serial.println("[BUFFER] Self check: PASS!");
 
 
-  Serial.println("TMS Ready!");
+  Serial.println("\nTMS Ready!\n");
 }
 
 void loop() {
