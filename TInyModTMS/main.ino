@@ -258,27 +258,22 @@ void filamentSwap(uint8_t slotNumber) {
 }
 
 
-void feed() {
+void refill() {
+
 
   while (true) {
-    uint8_t currentLoadedSlot = Selector::getLoadedInput();
-
-    // feed until it finds resistance in the buffed (unclick switch)
-    Serial.print("[Buffer] Feeding");
-    while (digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL) {
-      moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
-      Serial.print(".");
-    }
-    Serial.println("");
-
-    // compress the spring by fixed amount
-    Serial.println("[Buffer] Preloading...");
-    moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
-
-    Serial.println("[Buffer] Idle");
-    while (digitalRead(BUFFER_PIN) == !BUFFER_EMPTY_LEVEL); // wait for buffer to be empty
+     for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+      if (Selector::inputHasFilament(i)==false && slotHasFilament(i)) {
+        Serial.println("Filament detected!");
+        loadSlot(i);
+        break;
+      }
+     }
   }
 }
+
+
+
 
 
 
@@ -461,6 +456,13 @@ void loop() {
     else if (command.startsWith("FEED")) {
       Serial.println(("Entering feed mode (You need to reset to stop)"));
       feed();
+    }
+
+    // REFILL
+    // After loaded this will keep the buffer fed at all times
+    else if (command.startsWith("REFILL")) {
+      Serial.println(("Entering REFILL mode (You need to reset to stop)"));
+      refill();
     }
 
 
