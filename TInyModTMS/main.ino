@@ -48,7 +48,7 @@ void moveFeederMotor(uint8_t slotNumber, float moveDistance, float speed) {
   digitalWrite(slot.feederEnablePin, MOTOR_ON);
 
   // Perform steps with delay
-  bool s;
+  bool s = LOW;
   for (unsigned long i = 0; i < steps; i++) {
     digitalWrite(slot.feederStepPin, s);
     delayMicroseconds(stepDelay);
