@@ -50,9 +50,9 @@ void moveFeederMotor(uint8_t slotNumber, float moveDistance, float speed) {
   // Perform steps with delay
   bool s = LOW;
   for (unsigned long i = 0; i < steps; i++) {
+    s = !s;
     digitalWrite(slot.feederStepPin, s);
     delayMicroseconds(stepDelay);
-    s = !s;
   }
 
   // Disable motor
@@ -77,10 +77,10 @@ void moveSpoolMotor(uint8_t slotNumber, float moveDistance, float speed) {
   digitalWrite(slot.spoolEnablePin, MOTOR_ON);
 
   // Perform steps with delay
+  bool s = LOW;
   for (unsigned long i = 0; i < steps; i++) {
-    digitalWrite(slot.spoolStepPin, HIGH);
-    delayMicroseconds(stepDelay);
-    digitalWrite(slot.spoolStepPin, LOW);
+    s = !s;
+    digitalWrite(slot.spoolStepPin, s);
     delayMicroseconds(stepDelay);
   }
 
