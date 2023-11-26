@@ -271,73 +271,75 @@ void feed() {
 
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("TMS BOOT");
+  Serial.begin(115200);
+  Serial.println("[TMS] BOOTING...");
 
-  // Configure pins for each slot
-  Serial.println("Initializing Slots... " + String(MAX_SLOTS));
+  // Configure Slots
+  Serial.println("Initializing " + String(MAX_SLOTS) + " slots... ");
   for (uint8_t i = 0; i < MAX_SLOTS; i++) {
-
-    pinMode(slots[i].selectorInputPin, INPUT_PULLUP);
-
-    // feeder
+    // Feeder
     pinMode(slots[i].feederEnablePin, OUTPUT);
     pinMode(slots[i].feederDirPin, OUTPUT);
     pinMode(slots[i].feederStepPin, OUTPUT);
+    digitalWrite(slots[i].feederEnablePin, !MOTOR_ON); // Turn motor off by default
 
-    // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
-    digitalWrite(slots[i].feederEnablePin, !MOTOR_ON);
-
-    // spool
+    // Spool
     pinMode(slots[i].spoolEnablePin, OUTPUT);
     pinMode(slots[i].spoolDirPin, OUTPUT);
     pinMode(slots[i].spoolStepPin, OUTPUT);
-
-    // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
-    digitalWrite(slots[i].spoolEnablePin, !MOTOR_ON);
+    digitalWrite(slots[i].spoolEnablePin, !MOTOR_ON); // Turn motor off by default
 
     Serial.println("[SLOT-" + String(i+1) + "] " + "initialized!");
   }
 
+  // Configure Selector
   Serial.println("Initializing Selector... ");
+  for (uint8_t i = 0; i < MAX_SLOTS; i++) {
+    pinMode(slots[i].selectorInputPin, INPUT_PULLUP);
+  }
   pinMode(SELECTOR_END_PIN, INPUT_PULLUP);
+  Serial.println("[SELECTOR] initialized!");
 
+  // Configure Buffer
   Serial.println("Initializing Buffer... ");
   pinMode(BUFFER_PIN, INPUT_PULLUP);
   Serial.println("[BUFFER] initialized!");
 
 
+  // ---- RUN SELF CHECKS ----
+  Serial.println("\n[TMS] Running self check...");
 
-  Serial.println("\n[TMS] running self check...");
-  // self check
   // Check which slot is currently loaded, 0 if none
   int selectorLoadedCount = 0;
   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
     if (isSlotLoaded(i)) {
       selectorLoadedCount++;
-      Serial.println("[SELECTOR] Input " + String(i+1) + " has filament");
+      Serial.println("[SELECTOR] Input " + String(i) + " has filament");
     }
   }
 
   if (selectorLoadedCount==0) {
-    Serial.println("[SELECTOR] No filament is loaded!");
+    Serial.println("[SELECTOR] All inputs are empty");
   }
   else if (selectorLoadedCount>1) {
-    Serial.println("[SELECTOR] FAILED! More then 1 slot is reporting loaded!");
+    Serial.println("[SELECTOR] ERROR! More then 1 input is has filament!");
   }
   
   bool isSelectorLoaded = digitalRead(SELECTOR_END_PIN) == SELECTOR_DETECT_LEVEL;
-  if (isSelectorLoaded) Serial.println("[SELECTOR] output has filament");
-  else Serial.println("[SELECTOR] output is empty");
+  if (isSelectorLoaded) Serial.println("[SELECTOR] Output has filament");
+  else Serial.println("[SELECTOR] Output is empty");
   
   if (selectorLoadedCount==0 && isSelectorLoaded) {
-    Serial.println("[SELECTOR] FAILED! All the inputs are empty but the Selector output has filament!");
+    Serial.println("[SELECTOR] ERROR! All the inputs are empty but the Selector output has filament!");
   }
   else Serial.println("[SELECTOR] Self check: PASS!");
 
-
-  if (digitalRead(BUFFER_PIN)==!BUFFER_EMPTY_LEVEL && selectorLoadedCount==0) {
-    Serial.println("FAILED! Buffer is jammed or one of the Selector isn't detecting filament!");
+  bool isBufferEmpty = digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL;
+  if (!isBufferEmpty && selectorLoadedCount==0 && isSelectorLoaded) {
+    Serial.println("ERROR! Buffer is jammed!");
+  }
+  else if (!isBufferEmpty && selectorLoadedCount==0) {
+    Serial.println("ERROR! Selector output has no filament but Buffer says there is!");
   }
   else Serial.println("[BUFFER] Self check: PASS!");
 
@@ -351,6 +353,7 @@ void loop() {
     // Read the incoming command
     String command = Serial.readStringUntil('\n');
     command.toUpperCase();  // Convert the command to uppercase for case-insensitive comparison
+
 
     // MOVE <slot> <length> <speed>
     // Move a motor slot by a certain amount
@@ -369,6 +372,7 @@ void loop() {
       Serial.println("End.");
     }
 
+
     // ROLL <slot> <length> <speed>
     // Move a motor slot by a certain amount
     if (command.startsWith("ROLL ")) {
@@ -386,7 +390,6 @@ void loop() {
       Serial.println("End.");
     }
 
-    
 
     // SWAP <slot>
     // Do a complete filament swap and handles unloading other slots if necessary
@@ -399,6 +402,7 @@ void loop() {
       Serial.println("End.");
     }
 
+
     // LOAD <slot>
     // Loads a slot
     else if (command.startsWith("LOAD ")) {
@@ -409,6 +413,7 @@ void loop() {
       loadSlot(slotNumber);
       Serial.println("End.");
     }
+
 
     // UNLOAD <slot>
     // Unloads a slot
@@ -421,6 +426,7 @@ void loop() {
       Serial.println("End.");
     }
 
+
     // FEED
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("FEED")) {
@@ -428,8 +434,9 @@ void loop() {
       feed();
     }
 
+
     else {
-      Serial.println("Invalid command");
+      Serial.println("Invalid command!");
     }
   }
 }
