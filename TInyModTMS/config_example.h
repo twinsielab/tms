@@ -18,6 +18,8 @@ Slot slots[MAX_SLOTS] = {
   },
 };
 
+#define SPOOL_REWIND_OVERSHOOT 30
+
 // Motor Settings
 #define MOTOR_ON LOW             // state which the motor is turned on by the driver
 #define LOAD_SPEED 400           // speed (mm/s) for the loading filament sequence 

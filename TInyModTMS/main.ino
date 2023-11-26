@@ -103,19 +103,22 @@ void unloadSlot(uint8_t slotNumber) {
 
   // Load by backward forward until unloaded
   while (!isSelectorLoaded()) {
-    moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-    moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveFeederMotor(slotNumber, 10, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    moveSpoolMotor(slotNumber, 10, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
   }
 
   // Unload by moving backward until not loaded
   while (isSlotLoaded(slotNumber)) {
-    moveFeederMotor(slotNumber, -1, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
-    moveSpoolMotor(slotNumber, -1, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveFeederMotor(slotNumber, -10, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
+    moveSpoolMotor(slotNumber, -10, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
 
   // retract this amount past the switch
   moveFeederMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
   moveSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
+
+
+  moveSpoolMotor(slotNumber, -SPOOL_REWIND_OVERSHOOT, UNLOAD_SPEED);
 
   // Turn motor off
   digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
@@ -136,18 +139,18 @@ void loadSlot(uint8_t slotNumber) {
     // Load by moving forward until loaded
     while (!isSlotLoaded(slotNumber)) {
       moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-      moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      // moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
 
     // Load by moving forward until loaded
     while (!isSelectorLoaded()) {
       moveFeederMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
-      moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+      // moveSpoolMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
     
     // Move this amount past the selector output
     moveFeederMotor(slotNumber, SELECTOR_OFFSET_AFTER, LOAD_SPEED);
-    moveSpoolMotor(slotNumber, SELECTOR_OFFSET_AFTER, LOAD_SPEED);
+    // moveSpoolMotor(slotNumber, SELECTOR_OFFSET_AFTER, LOAD_SPEED);
     Serial.println("[SLOT-" + String(slotNumber) + "] Loaded!");
   }
   else if (currentLoadedSlot == slotNumber) {
