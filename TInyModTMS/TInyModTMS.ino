@@ -20,5 +20,8 @@
 //
 
 /*
- * Please customize the settings in the "config.h" file.
+ * Instructions:
+ * 1. Create a file called "config.h"
+ * 2. See the example configutation in the config_example.h
+ * 3. Configure as needed
  */
