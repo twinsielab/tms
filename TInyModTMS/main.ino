@@ -287,7 +287,7 @@ void refill() {
       if (Selector::inputHasFilament(i)==false && slotHasFilament(i)) {
         Serial.println("Filament detected!");
         loadSlot(i);
-        //unloadSlot(i);
+        // unloadSlot(i);
       }
      }
 }
@@ -492,5 +492,5 @@ void loop() {
 
 
   }
-    refill();
+   //  refill();
 }
