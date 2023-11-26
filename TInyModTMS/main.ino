@@ -375,7 +375,7 @@ void loop() {
 
     // ROLL <slot> <length> <speed>
     // Move a motor slot by a certain amount
-    if (command.startsWith("ROLL ")) {
+    else if (command.startsWith("ROLL ")) {
       int firstSpace = command.indexOf(' ', 5);
       int secondSpace = command.indexOf(' ', firstSpace + 1);
       // Extracting slot number, length, and speed
