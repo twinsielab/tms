@@ -4,7 +4,7 @@
 Slot slots[MAX_SLOTS] = {
   // SLOT-1
   {
-    6,        // hubSwitchPin (filament detector pin in the hub)
+    6,        // selectorSwitchPin (filament detector pin in the selector)
     7,        // enablePin    (driver enable pin)
     9,        // dirPin       (driver direction pin)
     8,        // stepPin      (driver step pin)
@@ -13,7 +13,7 @@ Slot slots[MAX_SLOTS] = {
   },
   // SLOT-2
   {
-    5,        // hubSwitchPin (filament detector pin in the hub)
+    5,        // selectorSwitchPin (filament detector pin in the selector)
     12,       // enablePin    (driver enable pin)
     10,       // dirPin       (driver direction pin)
     11,       // stepPin      (driver step pin)
@@ -27,10 +27,11 @@ Slot slots[MAX_SLOTS] = {
 #define LOAD_SPEED 400           // speed (mm/s) for the loading filament sequence 
 #define UNLOAD_SPEED 400         // speed (mm/s) for the unloading filament sequence
 
-// Hub Settings
-#define HUB_DETECT_LEVEL LOW     // level when the Hub has filament
-#define HUB_OFFSET_BEFORE 30     // how much to retract before the sensor
-#define HUB_OFFSET_AFTER  95     // how much to feed after the sensor
+// Selector Settings
+#define SELECTOR_END_PIN 1            // filament detector pin at the end of selector
+#define SELECTOR_DETECT_LEVEL LOW     // level when the Selector has filament
+#define SELECTOR_OFFSET_BEFORE 30     // how much to retract before the sensor
+#define SELECTOR_OFFSET_AFTER  95     // how much to feed after the sensor
 
 // Buffer Settings
 #define BUFFER_PIN 4

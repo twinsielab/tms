@@ -1,15 +1,23 @@
 #include "_types.h"
 #include "_config.h"
 
-#define UNPRESSED !HUB_DETECT_LEVEL
+#define UNPRESSED !SELECTOR_DETECT_LEVEL
 #define MOTOR_OFF !MOTOR_ON
+
+
+// Function to check if a slot is loaded
+bool isSelectorLoaded() {
+  // Read the selector switch pin state
+  bool state = digitalRead(SELECTOR_END_PIN);
+  return (state == SELECTOR_DETECT_LEVEL);
+}
 
 // Function to check if a slot is loaded
 bool isSlotLoaded(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
-  // Read the hub switch pin state
-  bool state = digitalRead(slots[slotNumber - 1].hubSwitchPin);
-  return (state == HUB_DETECT_LEVEL);
+  // Read the selector switch pin state
+  bool state = digitalRead(slots[slotNumber - 1].selectorSwitchPin);
+  return (state == SELECTOR_DETECT_LEVEL);
 }
 
 // Check which slot is currently loaded, 0 if none
@@ -21,7 +29,6 @@ uint8_t loadedSlot() {
   }
   return 0;  // Return 0 if no slots are loaded
 }
-
 
 // Function to move a motor associated with a given slot
 void moveMotor(uint8_t slotNumber, float moveDistance, float speed) {
@@ -64,13 +71,18 @@ void unloadSlot(uint8_t slotNumber) {
 
   Serial.println("[SLOT-" + String(slotNumber) + "] Unloading...");
 
+  // Load by backward forward until unloaded
+  while (!isSelectorLoaded()) {
+    moveMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+  }
+
   // Unload by moving backward until not loaded
   while (isSlotLoaded(slotNumber)) {
     moveMotor(slotNumber, -1, UNLOAD_SPEED);  // Move backward by 1mm at speed 10mm/s
   }
 
   // retract this amount past the switch
-  moveMotor(slotNumber, -HUB_OFFSET_BEFORE, UNLOAD_SPEED);
+  moveMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, UNLOAD_SPEED);
 
   // Turn motor off
   digitalWrite(slots[slotNumber-1].enablePin, MOTOR_OFF);
@@ -88,11 +100,16 @@ void loadSlot(uint8_t slotNumber) {
 
     // Load by moving forward until loaded
     while (!isSlotLoaded(slotNumber)) {
-      moveMotor(slotNumber, 1, LOAD_SPEED);  // Move backward by 1mm at LOAD_SPEED
+      moveMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    }
+
+    // Load by moving forward until loaded
+    while (!isSelectorLoaded()) {
+      moveMotor(slotNumber, 1, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
     }
     
-    // Move this amount past the hub switch
-    moveMotor(slotNumber, HUB_OFFSET_AFTER, LOAD_SPEED);
+    // Move this amount past the selector output
+    moveMotor(slotNumber, SELECTOR_OFFSET_AFTER, LOAD_SPEED);
     Serial.println("[SLOT-" + String(slotNumber) + "] Loaded!");
   }
   else if (currentLoadedSlot == slotNumber) {
@@ -160,7 +177,7 @@ void setup() {
     pinMode(slots[i].enablePin, OUTPUT);
     pinMode(slots[i].dirPin, OUTPUT);
     pinMode(slots[i].stepPin, OUTPUT);
-    pinMode(slots[i].hubSwitchPin, INPUT_PULLUP);
+    pinMode(slots[i].selectorSwitchPin, INPUT_PULLUP);
 
     // Initialize enable pin to LOW (assuming active HIGH - motor disabled initially)
     digitalWrite(slots[i].enablePin, !MOTOR_ON);
@@ -168,22 +185,46 @@ void setup() {
     Serial.println("[SLOT-" + String(i+1) + "] " + "initialized!");
   }
 
+  Serial.println("Initializing Selector... ");
+  pinMode(SELECTOR_END_PIN, INPUT_PULLUP);
+
   Serial.println("Initializing Buffer... ");
   pinMode(BUFFER_PIN, INPUT_PULLUP);
   Serial.println("[BUFFER] initialized!");
 
 
+
+  Serial.println("[TMS] running self check...");
   // self check
   // Check which slot is currently loaded, 0 if none
-  int x = 0;
+  int selectorLoadedCount = 0;
   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
-    if (isSlotLoaded(i)) x++;
+    if (isSlotLoaded(i)) {
+      selectorLoadedCount++;
+      Serial.println("[SELECTOR] Input " + String(i+1) + " has filament");
+    }
   }
-  if (x>1)  Serial.println("FAILED! More then 1 slot is reporting loaded!");
-  else Serial.println("Hub passed self check!");
 
-  if(digitalRead(BUFFER_PIN)==!BUFFER_EMPTY_LEVEL && x==0) Serial.println("FAILED! Buffer is jammed or one of the Hub filament detectors isnt detecting filament!");
-  else Serial.println("Buffer passed self check!");
+  if (selectorLoadedCount==0) {
+    Serial.println("[SELECTOR] No filament is loaded!");
+  }
+  else if (selectorLoadedCount>1) {
+    Serial.println("[SELECTOR] FAILED! More then 1 slot is reporting loaded!");
+  }
+  
+  bool isSelectorLoaded = digitalRead(SELECTOR_END_PIN) == SELECTOR_DETECT_LEVEL;
+  Serial.println("[SELECTOR] Loaded: " + (isSelectorLoaded?"YES":"NO"));
+  
+  if (selectorLoadedCount==0 && isSelectorLoaded) {
+    Serial.println("[SELECTOR] FAILED! All the inputs are empty but the Selector output has filament!");
+  }
+  else Serial.println("[SELECTOR] Self check: PASS!");
+
+
+  if (digitalRead(BUFFER_PIN)==!BUFFER_EMPTY_LEVEL && selectorLoadedCount==0) {
+    Serial.println("FAILED! Buffer is jammed or one of the Selector filament detectors isn't detecting filament!");
+  }
+  else Serial.println("[BUFFER] Self check: PASS!");
 
 
   Serial.println("TMS Ready!");
