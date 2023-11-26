@@ -85,7 +85,7 @@ void moveSpoolMotor(uint8_t slotNumber, float moveDistance, float speed) {
   }
 
   // Disable motor
-  // digitalWrite(slot.spoolEnablePin, MOTOR_OFF);
+  digitalWrite(slot.spoolEnablePin, MOTOR_OFF);
 }
 
 
