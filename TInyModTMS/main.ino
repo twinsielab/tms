@@ -1,3 +1,4 @@
+
 #include "types.h"
 #include "config.h"
 
@@ -240,6 +241,31 @@ void loadSlot(uint8_t slotNumber) {
 }
 
 
+void preLoadSlot(uint8_t slotNumber) {
+  if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
+  
+  if(!slotHasFilament(slotNumber)) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] No filament!");
+    return;
+  }
+  if (Selector::inputHasFilament(slotNumber)) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] Already loaded!");
+    return;
+  }
+
+  Serial.println("[SLOT-" + String(slotNumber) + "] Preloading...");
+
+  // Load by moving forward until Seletor see filament on the input
+  while (!Selector::inputHasFilament(slotNumber)) {
+    moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+  }
+
+  // Retract just before the Selector
+  moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, LOAD_SPEED);
+
+  Serial.println("[SLOT-" + String(slotNumber) + "] Preloaded!");
+}
+
 void filamentSwap(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
@@ -281,21 +307,42 @@ void feed() {
 
 
 void refill() {
-  while(true){
-     for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
-      if (Selector::inputHasFilament(i)==false && slotHasFilament(i)) {
-        Serial.println("Filament detected!");
-        delay(1000);
-        loadSlot(i);
-        // unloadSlot(i);
-        return;
-      }
-     }
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    bool s = slotHasFilament(i);
+    if (s != slotState[i-1]) {
+      slotState[i-1] = s;
+
+      // slot just changed state;
+    }
+
+    if (Selector::inputHasFilament(i)==false && ) {
+      Serial.println("Filament detected!");
+      delay(1000);
+      loadSlot(i);
+      // unloadSlot(i);
+      return;
+    }
   }
 }
 
+bool prevSlotState[MAX_SLOTS] = {};
+void monitorSlotInputs() {
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    bool s = slotHasFilament(i);
+    if (s != prevSlotState[i-1]) {
+      prevSlotState[i-1] = s;
+      // slot just changed state;
+      onSlotChangeState(i, s);
+    }
+  }
+}
 
-
+void onSlotChangeState(uint8_t slotNumber, bool hasFilament) {
+  // Slot has filament and Selector doesn't see it
+  if (hasFilament && Selector::inputHasFilament(slotNumber)==false) {
+    preLoadSlot(slotNumber);
+  }
+}
 
 
 
@@ -336,6 +383,12 @@ void setup() {
   pinMode(BUFFER_PIN, INPUT_PULLUP);
   Serial.println("[BUFFER] initialized!");
 
+
+  // Initialize slot monitor prevState array with current state, so it doesn't trigger a change during boot
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    prevSlotState[i-1] = slotHasFilament(i);
+  }
+  
 
   // ---- RUN SELF CHECKS ----
   Serial.println("\n[TMS] Running self check...");
@@ -491,8 +544,9 @@ void loop() {
     else {
       Serial.println("Invalid command!");
     }
-
-
   }
-   //  refill();
+  
+
+
+  monitorSlotInputs();
 }
