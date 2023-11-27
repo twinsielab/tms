@@ -285,7 +285,7 @@ void refill() {
      for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
       if (Selector::inputHasFilament(i)==false && slotHasFilament(i)) {
         Serial.println("Filament detected!");
-        delay(500);
+        delay(300);
         loadSlot(i);
         // unloadSlot(i);
         return;
