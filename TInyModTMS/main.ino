@@ -264,34 +264,34 @@ void preLoadSlot(uint8_t slotNumber) {
     distance+=MOVE_READ_DISTANCE;
 
     if (distance > PRELOAD_MAX_DISTANCE) {
-      Serial.println(("[SLOT-" + String(slotNumber) + "] Preload failed! (PRELOAD_MAX_DISTANCE)");
+      Serial.println("[SLOT-" + String(slotNumber) + "] Preload failed! (PRELOAD_MAX_DISTANCE)");
       return;
     }
 
     if (millis() - start > PRELOAD_TIMEOUT) {
-      Serial.println(("[SLOT-" + String(slotNumber) + "] Preload timedout! (PRELOAD_TIMEOUT)");
+      Serial.println("[SLOT-" + String(slotNumber) + "] Preload timedout! (PRELOAD_TIMEOUT)");
       return;
     }
 
     // Filament removed after detecting
     if (!slotHasFilament(slotNumber)) {
       if (removedTime==0){
-        Serial.println(("[SLOT-" + String(slotNumber) + "] Filament has been removed.");
+        Serial.println("[SLOT-" + String(slotNumber) + "] Filament has been removed.");
         removedTime = millis();
       }
       else if (millis() - removedTime > PRELOAD_DEBOUNCE) {
-        Serial.println(("[SLOT-" + String(slotNumber) + "] Preload aborted! (PRELOAD_DEBOUNCE)");
+        Serial.println("[SLOT-" + String(slotNumber) + "] Preload aborted! (PRELOAD_DEBOUNCE)");
       }
     }
     else if (removedTime>0) {
-      Serial.println(("[SLOT-" + String(slotNumber) + "] Filament re-inserted!");
+      Serial.println("[SLOT-" + String(slotNumber) + "] Filament re-inserted!");
       removedTime = 0;
     }
 
   }
 
   // Retract just before the Selector
-  Serial.println(("[SLOT-" + String(slotNumber) + "] Retract to idle posistion...");
+  Serial.println("[SLOT-" + String(slotNumber) + "] Retract to idle posistion...");
   moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, LOAD_SPEED);
 
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloaded!");
@@ -564,14 +564,14 @@ void loop() {
     // FEED
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("FEED")) {
-      Serial.println(("Entering feed mode (You need to reset to stop)"));
+      Serial.println("Entering feed mode (You need to reset to stop)");
       feed();
     }
 
     // REFILL
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("REFILL")) {
-      Serial.println(("Entering REFILL mode (You need to reset to stop)"));
+      Serial.println("Entering REFILL mode (You need to reset to stop)");
       // refill();
     }
 
