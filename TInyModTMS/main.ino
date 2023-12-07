@@ -156,9 +156,6 @@ void moveFeederAndSpoolMotor(uint8_t slotNumber, float moveDistance, float speed
 }
 
 
-
-
-
 void unloadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
@@ -309,6 +306,7 @@ void preLoadSlot(uint8_t slotNumber) {
 
 }
 
+
 void filamentSwap(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
@@ -381,11 +379,13 @@ void monitorSlotInputs() {
   }
 }
 
+bool autoPreload = false;
+
 void onSlotChangeState(uint8_t slotNumber, bool hasFilament) {
   Serial.println("[SLOT-"+String(slotNumber)+"] changed state: "+String(hasFilament));
 
   // Slot has filament and Selector doesn't see it
-  if (hasFilament && Selector::inputHasFilament(slotNumber)==false) {
+  if (autoPreload && hasFilament && Selector::inputHasFilament(slotNumber)==false) {
     Serial.println("[SLOT-"+String(slotNumber)+"] Filament inserted! Preloading...");
     preLoadSlot(slotNumber);
   }
@@ -586,6 +586,21 @@ void loop() {
       Serial.println("Entering REFILL mode (You need to reset to stop). (THIS COMMAND IS USELESS NOW)");
       // refill();
     }
+
+    // AUTOPRELOAD
+    // Turn autopreload on and off
+    else if (command.startsWith("AUTOPRELOAD")) {
+      if (autoPreload) {
+        autoPreload = false;
+        Serial.println("Auto preload Disabled!");
+      }
+      else {
+        autoPreload = true;
+        Serial.println("Auto preload Enabled!");
+      }
+      // refill();
+    }
+
 
 
     else {
