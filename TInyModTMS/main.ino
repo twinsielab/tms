@@ -430,8 +430,8 @@ void setup() {
 
   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
     Serial.print("[SLOT-" + String(i) + "] ");
-    if (slotHasFilament(i)) Serial.println("Has filament");
-    else Serial.println("Is empty");
+    if (slotHasFilament(i)) Serial.println("Feeder: Has filament");
+    else Serial.println("Feeder: EMPTY");
   }
 
   // Check which slot is currently loaded, 0 if none
@@ -443,12 +443,12 @@ void setup() {
       selectorLoadedCount++;
     }
     else {
-      Serial.println("Is empty");
+      Serial.println("EMPTY");
     }
   }
 
   if (selectorLoadedCount==0) {
-    Serial.println("[SELECTOR] All inputs are empty");
+    Serial.println("[SELECTOR] All inputs are empty!");
   }
   else if (selectorLoadedCount>1) {
     Serial.println("[SELECTOR] ERROR! More then 1 input is has filament!");
