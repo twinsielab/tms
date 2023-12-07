@@ -306,24 +306,25 @@ void feed() {
 }
 
 
-void refill() {
-  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
-    bool s = slotHasFilament(i);
-    if (s != slotState[i-1]) {
-      slotState[i-1] = s;
+// void refill() {
+//   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+//     bool s = slotHasFilament(i);
+//     if (s != slotState[i-1]) {
+//       slotState[i-1] = s;
 
-      // slot just changed state;
-    }
+//       // slot just changed state;
+//     }
 
-    if (Selector::inputHasFilament(i)==false && ) {
-      Serial.println("Filament detected!");
-      delay(1000);
-      loadSlot(i);
-      // unloadSlot(i);
-      return;
-    }
-  }
-}
+//     if (Selector::inputHasFilament(i)==false && ) {
+//       Serial.println("Filament detected!");
+//       delay(1000);
+//       loadSlot(i);
+//       // unloadSlot(i);
+//       return;
+//     }
+//   }
+// }
+
 
 bool prevSlotState[MAX_SLOTS] = {};
 void monitorSlotInputs() {
@@ -537,7 +538,7 @@ void loop() {
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("REFILL")) {
       Serial.println(("Entering REFILL mode (You need to reset to stop)"));
-      refill();
+      // refill();
     }
 
 
@@ -546,7 +547,6 @@ void loop() {
     }
   }
   
-
 
   monitorSlotInputs();
 }
