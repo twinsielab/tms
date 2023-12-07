@@ -30,6 +30,8 @@ Slot slots[MAX_SLOTS] = {
 #define PRELOAD_MAX_DISTANCE 500     // max distance (mm) preloading can move
 #define PRELOAD_TIMEOUT 30000        // max duration (ms) preloading can take
 #define PRELOAD_DEBOUNCE 3000        // time it takes for preloading to give up filament isn't detected for a brief amount of time
+#define PRELOAD_RETRACT_SPEED 100    // speed to retract (mm/s) after preloadting until the selector input
+#define PRELOAD_DELAY 300            // delay between detection and start of preload sequence
 
 // Selector Settings
 #define SELECTOR_END_PIN 3           // filament detector pin at the end of selector

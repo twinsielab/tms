@@ -256,6 +256,8 @@ void preLoadSlot(uint8_t slotNumber) {
   unsigned long start = millis();
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloading...");
 
+  delay(PRELOAD_DELAY);
+
   // Load by moving forward until Seletor see filament on the input
   int distance = 0;
   unsigned long removedTime = 0;
@@ -292,7 +294,7 @@ void preLoadSlot(uint8_t slotNumber) {
 
   // Retract just before the Selector
   Serial.println("[SLOT-" + String(slotNumber) + "] Retract to idle posistion...");
-  moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, LOAD_SPEED);
+  moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, PRELOAD_RETRACT_SPEED);
 
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloaded!");
 }
