@@ -253,14 +253,45 @@ void preLoadSlot(uint8_t slotNumber) {
     return;
   }
 
+  unsigned long start = millis();
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloading...");
 
   // Load by moving forward until Seletor see filament on the input
+  int distance = 0;
+  unsigned long removedTime = 0;
   while (!Selector::inputHasFilament(slotNumber)) {
     moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    distance+=MOVE_READ_DISTANCE;
+
+    if (distance > PRELOAD_MAX_DISTANCE) {
+      Serial.println(("[SLOT-" + String(slotNumber) + "] Preload failed! (PRELOAD_MAX_DISTANCE)");
+      return;
+    }
+
+    if (millis() - start > PRELOAD_TIMEOUT) {
+      Serial.println(("[SLOT-" + String(slotNumber) + "] Preload timedout! (PRELOAD_TIMEOUT)");
+      return;
+    }
+
+    // Filament removed after detecting
+    if (!slotHasFilament(slotNumber)) {
+      if (removedTime==0){
+        Serial.println(("[SLOT-" + String(slotNumber) + "] Filament has been removed.");
+        removedTime = millis();
+      }
+      else if (millis() - removedTime > PRELOAD_DEBOUNCE) {
+        Serial.println(("[SLOT-" + String(slotNumber) + "] Preload aborted! (PRELOAD_DEBOUNCE)");
+      }
+    }
+    else if (removedTime>0) {
+      Serial.println(("[SLOT-" + String(slotNumber) + "] Filament re-inserted!");
+      removedTime = 0;
+    }
+
   }
 
   // Retract just before the Selector
+  Serial.println(("[SLOT-" + String(slotNumber) + "] Retract to idle posistion...");
   moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, LOAD_SPEED);
 
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloaded!");
