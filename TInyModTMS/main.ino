@@ -296,7 +296,12 @@ void preLoadSlot(uint8_t slotNumber) {
   Serial.println("[SLOT-" + String(slotNumber) + "] Retract to idle posistion...");
   moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, PRELOAD_RETRACT_SPEED);
 
+  // Turn motor off
+  digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
+  digitalWrite(slots[slotNumber-1].spoolEnablePin, MOTOR_OFF);
+
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloaded!");
+
 }
 
 void filamentSwap(uint8_t slotNumber) {
