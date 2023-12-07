@@ -283,6 +283,11 @@ void preLoadSlot(uint8_t slotNumber) {
       }
       else if (millis() - removedTime > PRELOAD_DEBOUNCE) {
         Serial.println("[SLOT-" + String(slotNumber) + "] Preload aborted! (PRELOAD_DEBOUNCE)");
+        
+        // Turn motor off
+        digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
+        digitalWrite(slots[slotNumber-1].spoolEnablePin, MOTOR_OFF);
+        return;
       }
     }
     else if (removedTime>0) {
