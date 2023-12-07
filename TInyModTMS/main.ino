@@ -379,7 +379,7 @@ void monitorSlotInputs() {
   }
 }
 
-bool autoPreload = false;
+bool autoPreload = true;
 
 void onSlotChangeState(uint8_t slotNumber, bool hasFilament) {
   Serial.println("[SLOT-"+String(slotNumber)+"] changed state: "+String(hasFilament));
