@@ -339,8 +339,11 @@ void monitorSlotInputs() {
 }
 
 void onSlotChangeState(uint8_t slotNumber, bool hasFilament) {
+  Serial.println("[SLOT-"+String(slotNumber)+"] changed state: "+String(hasFilament));
+
   // Slot has filament and Selector doesn't see it
   if (hasFilament && Selector::inputHasFilament(slotNumber)==false) {
+    Serial.println("[SLOT-"+String(slotNumber)+"] Filament inserted! Preloading...");
     preLoadSlot(slotNumber);
   }
 }
