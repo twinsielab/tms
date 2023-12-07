@@ -571,7 +571,7 @@ void loop() {
     // REFILL
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("REFILL")) {
-      Serial.println("Entering REFILL mode (You need to reset to stop)");
+      Serial.println("Entering REFILL mode (You need to reset to stop). (THIS COMMAND IS USELESS NOW)");
       // refill();
     }
 
