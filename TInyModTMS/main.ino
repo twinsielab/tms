@@ -4,6 +4,7 @@
 
 #define MOTOR_OFF !MOTOR_ON
 
+
 bool slotHasFilament(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return false;
   // Read the slot filament sensor
@@ -245,6 +246,7 @@ void preLoadSlot(uint8_t slotNumber) {
     Serial.println("[SLOT-" + String(slotNumber) + "] No filament!");
     return;
   }
+
   if (Selector::inputHasFilament(slotNumber)) {
     Serial.println("[SLOT-" + String(slotNumber) + "] Already loaded!");
     return;
@@ -254,7 +256,7 @@ void preLoadSlot(uint8_t slotNumber) {
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloading...");
 
   delay(PRELOAD_DELAY);
-  if (!Selector::inputHasFilament(slotNumber)) moveFeederMotor(slotNumber, PRELOAD_SLOW_LENGTH, PRELOAD_SLOW_SPEED);
+  //if (!Selector::inputHasFilament(slotNumber)) moveFeederMotor(slotNumber, PRELOAD_SLOW_LENGTH, PRELOAD_SLOW_SPEED);
 
 
   // Load by moving forward until Seletor see filament on the input
@@ -364,6 +366,8 @@ void feed() {
 // }
 
 
+
+
 bool prevSlotState[MAX_SLOTS] = {};
 void monitorSlotInputs() {
   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
@@ -373,6 +377,7 @@ void monitorSlotInputs() {
       // slot just changed state;
       onSlotChangeState(i, s);
     }
+  }
 }
 
 bool autoPreload = true;
