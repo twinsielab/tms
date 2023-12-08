@@ -254,6 +254,8 @@ void preLoadSlot(uint8_t slotNumber) {
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloading...");
 
   delay(PRELOAD_DELAY);
+  if (!Selector::inputHasFilament(slotNumber)) moveFeederMotor(slotNumber, PRELOAD_SLOW_LENGTH, PRELOAD_SLOW_SPEED);
+
 
   // Load by moving forward until Seletor see filament on the input
   int distance = 0;
@@ -264,11 +266,6 @@ void preLoadSlot(uint8_t slotNumber) {
 
     if (distance > PRELOAD_MAX_DISTANCE) {
       Serial.println("[SLOT-" + String(slotNumber) + "] Preload failed! (PRELOAD_MAX_DISTANCE)");
-      return;
-    }
-
-    if (millis() - start > PRELOAD_TIMEOUT) {
-      Serial.println("[SLOT-" + String(slotNumber) + "] Preload timedout! (PRELOAD_TIMEOUT)");
       return;
     }
 
