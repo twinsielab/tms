@@ -256,7 +256,7 @@ void preLoadSlot(uint8_t slotNumber) {
   Serial.println("[SLOT-" + String(slotNumber) + "] Preloading...");
 
   delay(PRELOAD_DELAY);
-  //if (!Selector::inputHasFilament(slotNumber)) moveFeederMotor(slotNumber, PRELOAD_SLOW_LENGTH, PRELOAD_SLOW_SPEED);
+  if (!Selector::inputHasFilament(slotNumber)) moveFeederMotor(slotNumber, PRELOAD_SLOW_LENGTH, PRELOAD_SLOW_SPEED);
 
 
   // Load by moving forward until Seletor see filament on the input
