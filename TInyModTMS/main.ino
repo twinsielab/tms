@@ -1,3 +1,4 @@
+
 #include "types.h"
 #include "config.h"
 
@@ -155,9 +156,6 @@ void moveFeederAndSpoolMotor(uint8_t slotNumber, float moveDistance, float speed
 }
 
 
-
-
-
 void unloadSlot(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
@@ -240,6 +238,75 @@ void loadSlot(uint8_t slotNumber) {
 }
 
 
+void preLoadSlot(uint8_t slotNumber) {
+  if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
+  
+  if(!slotHasFilament(slotNumber)) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] No filament!");
+    return;
+  }
+  if (Selector::inputHasFilament(slotNumber)) {
+    Serial.println("[SLOT-" + String(slotNumber) + "] Already loaded!");
+    return;
+  }
+
+  unsigned long start = millis();
+  Serial.println("[SLOT-" + String(slotNumber) + "] Preloading...");
+
+  delay(PRELOAD_DELAY);
+
+  // Load by moving forward until Seletor see filament on the input
+  int distance = 0;
+  unsigned long removedTime = 0;
+  while (!Selector::inputHasFilament(slotNumber)) {
+    moveFeederMotor(slotNumber, MOVE_READ_DISTANCE, LOAD_SPEED);  // Move by 1mm at LOAD_SPEED
+    distance+=MOVE_READ_DISTANCE;
+
+    if (distance > PRELOAD_MAX_DISTANCE) {
+      Serial.println("[SLOT-" + String(slotNumber) + "] Preload failed! (PRELOAD_MAX_DISTANCE)");
+      return;
+    }
+
+    if (millis() - start > PRELOAD_TIMEOUT) {
+      Serial.println("[SLOT-" + String(slotNumber) + "] Preload timedout! (PRELOAD_TIMEOUT)");
+      return;
+    }
+
+    // Filament removed after detecting
+    if (!slotHasFilament(slotNumber)) {
+      if (removedTime==0){
+        Serial.println("[SLOT-" + String(slotNumber) + "] Filament has been removed.");
+        removedTime = millis();
+      }
+      else if (millis() - removedTime > PRELOAD_DEBOUNCE) {
+        Serial.println("[SLOT-" + String(slotNumber) + "] Preload aborted! (PRELOAD_DEBOUNCE)");
+        
+        // Turn motor off
+        digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
+        digitalWrite(slots[slotNumber-1].spoolEnablePin, MOTOR_OFF);
+        return;
+      }
+    }
+    else if (removedTime>0) {
+      Serial.println("[SLOT-" + String(slotNumber) + "] Filament re-inserted!");
+      removedTime = 0;
+    }
+
+  }
+
+  // Retract just before the Selector
+  Serial.println("[SLOT-" + String(slotNumber) + "] Retract to idle posistion...");
+  moveFeederAndSpoolMotor(slotNumber, -SELECTOR_OFFSET_BEFORE, PRELOAD_RETRACT_SPEED);
+
+  // Turn motor off
+  digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
+  digitalWrite(slots[slotNumber-1].spoolEnablePin, MOTOR_OFF);
+
+  Serial.println("[SLOT-" + String(slotNumber) + "] Preloaded!");
+
+}
+
+
 void filamentSwap(uint8_t slotNumber) {
   if (slotNumber < 1 || slotNumber > MAX_SLOTS) return Serial.println("Invalid slot");
 
@@ -280,22 +347,48 @@ void feed() {
 }
 
 
-void refill() {
-  while(true){
-     for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
-      if (Selector::inputHasFilament(i)==false && slotHasFilament(i)) {
-        Serial.println("Filament detected!");
-        delay(300);
-        loadSlot(i);
-        // unloadSlot(i);
-        return;
-      }
-     }
-  }
+// void refill() {
+//   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+//     bool s = slotHasFilament(i);
+//     if (s != slotState[i-1]) {
+//       slotState[i-1] = s;
+
+//       // slot just changed state;
+//     }
+
+//     if (Selector::inputHasFilament(i)==false && ) {
+//       Serial.println("Filament detected!");
+//       delay(1000);
+//       loadSlot(i);
+//       // unloadSlot(i);
+//       return;
+//     }
+//   }
+// }
+
+
+bool prevSlotState[MAX_SLOTS] = {};
+void monitorSlotInputs() {
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    bool s = slotHasFilament(i);
+    if (s != prevSlotState[i-1]) {
+      prevSlotState[i-1] = s;
+      // slot just changed state;
+      onSlotChangeState(i, s);
+    }
 }
 
+bool autoPreload = true;
 
+void onSlotChangeState(uint8_t slotNumber, bool hasFilament) {
+  Serial.println("[SLOT-"+String(slotNumber)+"] changed state: "+String(hasFilament));
 
+  // Slot has filament and Selector doesn't see it
+  if (autoPreload && hasFilament && Selector::inputHasFilament(slotNumber)==false) {
+    Serial.println("[SLOT-"+String(slotNumber)+"] Filament inserted! Preloading...");
+    preLoadSlot(slotNumber);
+  }
+}
 
 
 
@@ -337,13 +430,19 @@ void setup() {
   Serial.println("[BUFFER] initialized!");
 
 
+  // Initialize slot monitor prevState array with current state, so it doesn't trigger a change during boot
+  for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
+    prevSlotState[i-1] = slotHasFilament(i);
+  }
+  
+
   // ---- RUN SELF CHECKS ----
   Serial.println("\n[TMS] Running self check...");
 
   for (uint8_t i = 1; i <= MAX_SLOTS; i++) {
     Serial.print("[SLOT-" + String(i) + "] ");
-    if (slotHasFilament(i)) Serial.println("Has filament");
-    else Serial.println("Is empty");
+    if (slotHasFilament(i)) Serial.println("Feeder: Has filament");
+    else Serial.println("Feeder: EMPTY");
   }
 
   // Check which slot is currently loaded, 0 if none
@@ -355,12 +454,12 @@ void setup() {
       selectorLoadedCount++;
     }
     else {
-      Serial.println("Is empty");
+      Serial.println("EMPTY");
     }
   }
 
   if (selectorLoadedCount==0) {
-    Serial.println("[SELECTOR] All inputs are empty");
+    Serial.println("[SELECTOR] All inputs are empty!");
   }
   else if (selectorLoadedCount>1) {
     Serial.println("[SELECTOR] ERROR! More then 1 input is has filament!");
@@ -476,23 +575,38 @@ void loop() {
     // FEED
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("FEED")) {
-      Serial.println(("Entering feed mode (You need to reset to stop)"));
+      Serial.println("Entering feed mode (You need to reset to stop)");
       feed();
     }
 
     // REFILL
     // After loaded this will keep the buffer fed at all times
     else if (command.startsWith("REFILL")) {
-      Serial.println(("Entering REFILL mode (You need to reset to stop)"));
-      refill();
+      Serial.println("Entering REFILL mode (You need to reset to stop). (THIS COMMAND IS USELESS NOW)");
+      // refill();
     }
+
+    // AUTOPRELOAD
+    // Turn autopreload on and off
+    else if (command.startsWith("AUTOPRELOAD")) {
+      if (autoPreload) {
+        autoPreload = false;
+        Serial.println("Auto preload Disabled!");
+      }
+      else {
+        autoPreload = true;
+        Serial.println("Auto preload Enabled!");
+      }
+      // refill();
+    }
+
 
 
     else {
       Serial.println("Invalid command!");
     }
-
-
   }
-   //  refill();
+  
+
+  monitorSlotInputs();
 }

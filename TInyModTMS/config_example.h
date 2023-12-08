@@ -25,7 +25,13 @@ Slot slots[MAX_SLOTS] = {
 #define SPOOL_EXTRA_REWIND 150.0     // rewind the spool by an extra distance (mm) after unloading
 #define MOTOR_ON LOW                 // state which the motor is turned on by the driver
 #define MOVE_READ_DISTANCE 1.0       // distance (mm) the filament moves between every sensor read
-#define SLOT_DETECT_LEVEL LOW      // level when the Slot has filament
+#define SLOT_DETECT_LEVEL LOW        // level when the Slot has filament
+
+#define PRELOAD_MAX_DISTANCE 1000     // max distance (mm) preloading can move
+#define PRELOAD_TIMEOUT 8000        // max duration (ms) preloading can take
+#define PRELOAD_DEBOUNCE 500        // time it takes for preloading to give up filament isn't detected for a brief amount of time
+#define PRELOAD_RETRACT_SPEED 100    // speed to retract (mm/s) after preloadting until the selector input
+#define PRELOAD_DELAY 300            // delay between detection and start of preload sequence
 
 // Selector Settings
 #define SELECTOR_END_PIN 3           // filament detector pin at the end of selector
