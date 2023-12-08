@@ -376,7 +376,6 @@ void monitorSlotInputs() {
       // slot just changed state;
       onSlotChangeState(i, s);
     }
-  }
 }
 
 bool autoPreload = true;
