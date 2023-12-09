@@ -324,23 +324,57 @@ void filamentSwap(uint8_t slotNumber) {
 
 
 void feed() {
+  enum modes {
+    IDLE,
+    FEED,
+    RETRACT
+  };
+
+  int mode = IDLE;
+
   while (true) {
     uint8_t currentLoadedSlot = Selector::getLoadedInput();
 
     // feed until it finds resistance in the buffed (unclick switch)
-    Serial.print("[BUFFER] Feeding");
     while (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
-      moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
-      Serial.print(".");
+      if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
+        mode = FEED;
+        moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
+        Serial.print(">");
+      }
+      else {
+        Serial.println("");
+        break;
+      }
     }
-    Serial.println("");
 
-    // compress the spring by fixed amount
-    Serial.println("[BUFFER] Buffering...");
-    moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
+    if (mode==FEED) {
+      // compress the spring by fixed amount
+      Serial.println("[BUFFER] Tensioning...");
+      moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
+      mode = IDLE;
+    }
 
-    Serial.println("[BUFFER] Idle");
-    while (digitalRead(BUFFER_FEED_PIN) == !BUFFER_FEED_LEVEL); // wait for buffer to be empty
+    // feed until it finds resistance in the buffed (unclick switch)
+    while (digitalRead(BUFFER_RETRACT_PIN) == BUFFER_FEED_LEVEL) {
+      if (digitalRead(BUFFER_RETRACT_PIN) == BUFFER_FEED_LEVEL) {
+        mode = RETRACT;
+        moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
+        Serial.print("<");
+      }
+      else {
+        Serial.println("");
+        break;
+      }
+    }
+
+    if (mode==RETRACT) {
+      // compress the spring by fixed amount
+      Serial.println("[BUFFER] Untensioning...");
+      moveFeederMotor(currentLoadedSlot, BUFFER_UNLOAD_LENGH, PRELOAD_SPEED);
+      mode = IDLE;
+    }
+
   }
 }
 

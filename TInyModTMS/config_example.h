@@ -41,8 +41,11 @@ Slot slots[MAX_SLOTS] = {
 #define SELECTOR_OFFSET_AFTER  95.0  // how much to feed after the sensor
 
 // Buffer Settings
-#define BUFFER_FEED_PIN 4                 // pressure detection pin on the buffer
-#define BUFFER_FEED_LEVEL LOW       // level when the Buffer is empty
-#define FEED_SPEED 200.0             // speed (mm/s) which filament will be feed when theres no pressure on the buffer
-#define PRELOAD_SPEED 100.0          // speed (mm/s) which the buffer spring will be compressed
-#define BUFFER_PRELOAD_LENGH 15.0    // how much preload the buffer spring will be compressed
+#define BUFFER_FEED_PIN 4           // switch on the input side of the buffer
+#define BUFFER_FEED_LEVEL LOW       // level when the Buffer should feed
+#define BUFFER_RETRACT_PIN 4        // switch on the output side of the buffer
+#define BUFFER_RETRACT_LEVEL LOW    // level when the Buffer should retract
+#define FEED_SPEED 200              // speed (mm/s) which filament will be feed when theres no pressure on the buffer
+#define PRELOAD_SPEED 100           // speed (mm/s) which the buffer spring will be compressed
+#define BUFFER_PRELOAD_LENGH 15     // how much preload the buffer spring will be compressed
+#define BUFFER_UNLOAD_LENGH 15     // how much preload the buffer spring will be compressed
