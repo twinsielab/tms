@@ -258,7 +258,6 @@ void preLoadSlot(uint8_t slotNumber) {
   delay(PRELOAD_DELAY);
   if (!Selector::inputHasFilament(slotNumber)) moveFeederMotor(slotNumber, PRELOAD_SLOW_LENGTH, PRELOAD_SLOW_SPEED);
 
-
   // Load by moving forward until Seletor see filament on the input
   int distance = 0;
   unsigned long removedTime = 0;
@@ -330,7 +329,7 @@ void feed() {
 
     // feed until it finds resistance in the buffed (unclick switch)
     Serial.print("[BUFFER] Feeding");
-    while (digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL) {
+    while (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
       moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
       Serial.print(".");
     }
@@ -341,7 +340,7 @@ void feed() {
     moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
 
     Serial.println("[BUFFER] Idle");
-    while (digitalRead(BUFFER_PIN) == !BUFFER_EMPTY_LEVEL); // wait for buffer to be empty
+    while (digitalRead(BUFFER_FEED_PIN) == !BUFFER_FEED_LEVEL); // wait for buffer to be empty
   }
 }
 
@@ -428,7 +427,7 @@ void setup() {
 
   // Configure Buffer
   Serial.println("Initializing Buffer... ");
-  pinMode(BUFFER_PIN, INPUT_PULLUP);
+  pinMode(BUFFER_FEED_PIN, INPUT_PULLUP);
   Serial.println("[BUFFER] initialized!");
 
 
@@ -482,7 +481,7 @@ void setup() {
   }
   else Serial.println("[SELECTOR] Self check: PASS!");
 
-  bool isBufferEmpty = digitalRead(BUFFER_PIN) == BUFFER_EMPTY_LEVEL;
+  bool isBufferEmpty = digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL;
   if (!isBufferEmpty && selectorLoadedCount==0 && isSelectorLoaded) {
     Serial.println("ERROR! Buffer is jammed!");
   }
