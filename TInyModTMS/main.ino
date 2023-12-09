@@ -462,6 +462,7 @@ void setup() {
   // Configure Buffer
   Serial.println("Initializing Buffer... ");
   pinMode(BUFFER_FEED_PIN, INPUT_PULLUP);
+  pinMode(BUFFER_RETRACT_PIN, INPUT_PULLUP);
   Serial.println("[BUFFER] initialized!");
 
 
