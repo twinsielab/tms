@@ -335,19 +335,20 @@ void feed() {
   while (true) {
     uint8_t currentLoadedSlot = Selector::getLoadedInput();
 
-    Serial.print("Slot: " + String(currentLoadedSlot));
 
     // feed until it finds resistance in the buffed (unclick switch)
-    while (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
-      Serial.println("\n[BUFFER] Feeding...");
-      if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
-        moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
-        Serial.print(">");
-        mode = FEED;
-      }
-      else {
-        Serial.println("|STOPFEED|");
-        break;
+    if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) 
+      Serial.println("\n[BUFFER] Feeding... ");
+      while (toUpperCase) {
+        if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
+          moveFeederMotor(currentLoadedSlot, MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
+          Serial.print(">");
+          mode = FEED;
+        }
+        else {
+          Serial.println("|STOP_FEED|");
+          break;
+        }
       }
     }
 
@@ -355,21 +356,23 @@ void feed() {
       // compress the spring by fixed amount
       Serial.println("\n[BUFFER] Tensioning...");
       moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
-      Serial.println("\n[BUFFER] Idle");
+      Serial.println("\n[BUFFER] Idle.");
       mode = IDLE;
     }
 
     // feed until it finds resistance in the buffed (unclick switch)
-    while (digitalRead(BUFFER_RETRACT_PIN) == BUFFER_FEED_LEVEL) {
-      Serial.println("\n[BUFFER] Retracting...");
-      if (digitalRead(BUFFER_RETRACT_PIN) == BUFFER_FEED_LEVEL) {
-        mode = RETRACT;
-        moveFeederMotor(currentLoadedSlot, -MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
-        Serial.print("<");
-      }
-      else {
-        Serial.println("|STOPRETRACT|");
-        break;
+    if (digitalRead(BUFFER_RETRACT_PIN) == BUFFER_FEED_LEVEL) {
+      Serial.println("\n[BUFFER] Retracting... ");
+      while (true) {
+        if (digitalRead(BUFFER_RETRACT_PIN) == BUFFER_FEED_LEVEL) {
+          mode = RETRACT;
+          moveFeederMotor(currentLoadedSlot, -MOVE_READ_DISTANCE, FEED_SPEED);  // Move forward by 1mm at FEED_SPEED
+          Serial.print("<");
+        }
+        else {
+          Serial.println("|STOP_RETRACT|");
+          break;
+        }
       }
     }
 
@@ -377,7 +380,7 @@ void feed() {
       // compress the spring by fixed amount
       Serial.println("\n[BUFFER] Untensioning...");
       moveFeederMotor(currentLoadedSlot, -BUFFER_UNLOAD_LENGH, PRELOAD_SPEED);
-      Serial.println("\n[BUFFER] Idle");
+      Serial.println("\n[BUFFER] Idle.");
       mode = IDLE;
     }
 
