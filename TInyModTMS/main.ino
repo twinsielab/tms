@@ -335,9 +335,8 @@ void feed() {
   while (true) {
     uint8_t currentLoadedSlot = Selector::getLoadedInput();
 
-
     // feed until it finds resistance in the buffed (unclick switch)
-    if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) 
+    if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
       Serial.println("\n[BUFFER] Feeding... ");
       while (toUpperCase) {
         if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
