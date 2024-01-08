@@ -334,6 +334,11 @@ void feed() {
 
   while (true) {
     uint8_t currentLoadedSlot = Selector::getLoadedInput();
+    
+    if(currentLoadedSlot<=0){
+      println('[BUFFER] No slot loaded! Exiting Feed mode.');
+      return;
+    }
 
     // feed until it finds resistance in the buffed (unclick switch)
     if (digitalRead(BUFFER_FEED_PIN) == BUFFER_FEED_LEVEL) {
@@ -379,7 +384,7 @@ void feed() {
       // compress the spring by fixed amount
       Serial.println("\n[BUFFER] Untensioning...");
       moveFeederMotor(currentLoadedSlot, -BUFFER_UNLOAD_LENGH, PRELOAD_SPEED);
-      Serial.println("\n[BUFFER] Idle.");
+            Serial.println("\n[BUFFER] Idle.");
       mode = IDLE;
     }
 
