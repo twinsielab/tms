@@ -360,6 +360,13 @@ void feed() {
       // compress the spring by fixed amount
       Serial.println("[BUFFER] Tensioning...");
       moveFeederMotor(currentLoadedSlot, BUFFER_PRELOAD_LENGH, PRELOAD_SPEED);
+
+      if (DISABLE_MOTOR_ON_IDLE) {
+        // Turn motor off
+        digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
+        digitalWrite(slots[slotNumber-1].spoolEnablePin, MOTOR_OFF);
+      }
+
       Serial.println("[BUFFER] Idle.");
       mode = IDLE;
     }
@@ -383,8 +390,16 @@ void feed() {
     if (mode==RETRACT) {
       // compress the spring by fixed amount
       Serial.println("\n[BUFFER] Untensioning...");
-      moveFeederMotor(currentLoadedSlot, -BUFFER_UNLOAD_LENGH, PRELOAD_SPEED);
-            Serial.println("\n[BUFFER] Idle.");
+      if (SYNC_FEEDER_SPOOL_ON_RETRACT) moveFeederAndSpoolMotor(currentLoadedSlot, -BUFFER_UNLOAD_LENGH, PRELOAD_SPEED);
+      else moveFeederMotor(currentLoadedSlot, -BUFFER_UNLOAD_LENGH, PRELOAD_SPEED);
+      
+      if (DISABLE_MOTOR_ON_IDLE) {
+        // Turn motor off
+        digitalWrite(slots[slotNumber-1].feederEnablePin, MOTOR_OFF);
+        digitalWrite(slots[slotNumber-1].spoolEnablePin, MOTOR_OFF);
+      }
+
+      Serial.println("\n[BUFFER] Idle.");
       mode = IDLE;
     }
 
